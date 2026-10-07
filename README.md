@@ -20,8 +20,7 @@ explainable AI, drift monitoring, automated `targets` pipelines, and Docker depl
 
 </div>
 
-> ⚠️ Replace `your-org/R-Predictive-Maintenance` in the badges and clone URLs
-> with your actual repository slug.
+
 
 ---
 
