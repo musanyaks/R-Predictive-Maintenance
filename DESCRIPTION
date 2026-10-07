@@ -1,0 +1,51 @@
+# File: DESCRIPTION
+Package: rpredictmaint
+Title: Industrial Predictive Maintenance System in R
+Version: 0.1.0
+Authors@R: person("Your", "Name", email = "you@example.com", role = c("aut", "cre"))
+Description: Multi-model predictive maintenance platform: ingestion, feature
+    engineering, failure classification, RUL regression, anomaly detection,
+    survival analysis, explainability, Plumber API, and Shiny dashboard.
+License: MIT + file LICENSE
+Encoding: UTF-8
+Depends: R (>= 4.2)
+Imports:
+    arrow,
+    config,
+    DBI,
+    DT,
+    dplyr,
+    forecast,
+    ggplot2,
+    glue,
+    isotree,
+    jsonlite,
+    kernelshap,
+    logger,
+    lubridate,
+    plotly,
+    plumber,
+    pool,
+    purrr,
+    RPostgres,
+    readr,
+    ranger,
+    rprojroot,
+    rmarkdown,
+    scales,
+    shapviz,
+    shiny,
+    shinydashboard,
+    survival,
+    tidymodels,
+    tidyr,
+    tibble,
+    xgboost,
+    yaml,
+    yardstick,
+    zoo
+Suggests:
+    pkgload,
+    testthat (>= 3.0.0)
+Config/testthat/edition: 3
+RoxygenNote: 7.3.2
