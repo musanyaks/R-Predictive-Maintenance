@@ -1,0 +1,29 @@
+# Secrets
+.Renviron
+.env
+
+# R
+.Rhistory
+.RData
+.Rproj.user/
+renv/library/
+renv/staging/
+
+# targets cache
+_targets/
+
+# Data and models (large / generated)
+data/raw/*.csv
+data/processed/*.parquet
+models/**/*.rds
+
+# Logs and reports output
+logs/**/*.log
+reports/**/*.html
+reports/**/*.csv
+
+# OS / editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
