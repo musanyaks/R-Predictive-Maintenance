@@ -1,0 +1,4 @@
+# Run once to create the placeholder logo:
+png("shiny/www/images/logo.png", width = 200, height = 40, bg = "transparent")
+plot.new(); text(0.5, 0.5, "PredictMaint", cex = 1.4)
+dev.off()

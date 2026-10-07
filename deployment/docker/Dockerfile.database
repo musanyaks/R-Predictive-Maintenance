@@ -1,0 +1,6 @@
+# File: deployment/docker/Dockerfile.database
+FROM timescale/timescaledb:latest-pg16
+
+# Schema is also applied by the app on startup (run_migrations());
+# baked in here for offline deployments:
+COPY database/schema.sql /docker-entrypoint-initdb.d/00_schema.sql

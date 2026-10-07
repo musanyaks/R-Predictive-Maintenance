@@ -1,0 +1,11 @@
+# File: config/database.yml
+default:
+  host: !expr Sys.getenv("DB_HOST", "localhost")
+  port: !expr as.integer(Sys.getenv("DB_PORT", "5432"))
+  dbname: !expr Sys.getenv("DB_NAME", "predictmaint")
+  user: !expr Sys.getenv("DB_USER", "postgres")
+  password: !expr Sys.getenv("DB_PASSWORD", "postgres")
+
+production:
+  host: !expr Sys.getenv("DB_HOST")
+  password: !expr Sys.getenv("DB_PASSWORD")

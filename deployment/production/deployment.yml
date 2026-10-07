@@ -1,0 +1,32 @@
+# File: deployment/production/deployment.yml
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: rpredictmaint-api
+spec:
+  replicas: 2
+  selector:
+    matchLabels: { app: rpredictmaint-api }
+  template:
+    metadata:
+      labels: { app: rpredictmaint-api }
+    spec:
+      containers:
+        - name: api
+          image: ghcr.io/yourorg/rpredictmaint-api:latest
+          ports: [{ containerPort: 8000 }]
+          envFrom:
+            - secretRef: { name: rpredictmaint-secrets }
+          readinessProbe:
+            httpGet: { path: /api/v1/health, port: 8000 }
+            initialDelaySeconds: 20
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rpredictmaint-api
+spec:
+  selector: { app: rpredictmaint-api }
+  ports:
+    - port: 80
+      targetPort: 8000

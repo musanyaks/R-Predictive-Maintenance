@@ -1,29 +1,44 @@
+# File: .gitignore
+# R
+.Rhistory
+.RData
+.Rproj.user
+*.Rproj
+
 # Secrets
 .Renviron
 .env
 
-# R
-.Rhistory
-.RData
-.Rproj.user/
+# renv (keep renv.lock, ignore infrastructure)
 renv/library/
-renv/staging/
+renv/local/
 
-# targets cache
-_targets/
-
-# Data and models (large / generated)
+# Data artifacts (generated)
 data/raw/*.csv
-data/processed/*.parquet
-models/**/*.rds
+data/processed/*
+!data/processed/.gitkeep
 
-# Logs and reports output
-logs/**/*.log
-reports/**/*.html
-reports/**/*.csv
+# Model artifacts (generated)
+models/classification/**/model.rds
+models/regression/**/model.rds
+models/anomaly/**/model.rds
+models/model_metadata/model_registry.csv
 
-# OS / editor
+# Logs
+logs/**/*
+!logs/**/.gitkeep
+
+# Reports output
+reports/figures/*
+reports/model_performance/*
+reports/maintenance_reports/*
+!reports/**/.gitkeep
+
+# targets
+_targets/meta/
+_targets/objects/
+_targets/user/
+
+# OS / editors
 .DS_Store
-Thumbs.db
-.vscode/
-.idea/
+*.swp

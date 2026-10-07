@@ -1,0 +1,14 @@
+# File: .github/workflows/build.yml
+name: build
+on:
+  push: { branches: [main] }
+
+jobs:
+  docker:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Build images
+        run: |
+          docker build -f deployment/docker/Dockerfile.api -t rpredictmaint-api .
+          docker build -f deployment/docker/Dockerfile.shiny -t rpredictmaint-shiny .

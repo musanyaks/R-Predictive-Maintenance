@@ -1,0 +1,23 @@
+# File: config/config.yml
+default:
+  app:
+    name: rpredictmaint
+  logging:
+    level: !expr Sys.getenv("LOG_LEVEL", "INFO")
+  paths:
+    data_raw: data/raw
+    data_processed: data/processed
+    models: models
+    logs: logs
+    reports: reports
+  api:
+    port: 8000
+    token_env: API_TOKEN
+  shiny:
+    port: 3838
+
+production:
+  logging:
+    level: WARN
+  api:
+    port: !expr as.numeric(Sys.getenv("API_PORT", "8000"))

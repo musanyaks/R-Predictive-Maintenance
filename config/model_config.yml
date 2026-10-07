@@ -1,0 +1,30 @@
+# File: config/model_config.yml
+default:
+  features:
+    rolling_windows: [6, 24]
+    lag_offsets: [1, 6, 12]
+    stat_window: 24
+    min_history_hours: 48
+  labels:
+    failure_horizon_hours: 48
+  training:
+    test_prop: 0.2
+    xgboost:
+      trees: 400
+      tree_depth: 4
+      learn_rate: 0.05
+    corr_threshold: 0.95
+    top_k_features: 25
+  risk:
+    weights:
+      failure: 0.5
+      rul: 0.3
+      anomaly: 0.2
+    rul_half_life_days: 14
+    thresholds:
+      medium: 40
+      high: 65
+      critical: 85
+  monitoring:
+    psi_threshold: 0.2
+    performance_window_days: 30
