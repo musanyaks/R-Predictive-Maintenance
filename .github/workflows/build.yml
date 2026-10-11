@@ -1,7 +1,15 @@
-# File: .github/workflows/build.yml
 name: build
 on:
-  push: { branches: [main] }
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile"
+      - "deployment/docker/**"
+      - "DESCRIPTION"
+      - "R/**"
+      - "shiny/**"
+      - "api/**"
 
 jobs:
   docker:

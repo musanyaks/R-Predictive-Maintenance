@@ -1,0 +1,12 @@
+.git
+.github
+logs
+_targets
+renv
+data/processed
+reports
+*.Rproj
+.Renviron
+.env
+bootstrap.log
+_patch_app.R
