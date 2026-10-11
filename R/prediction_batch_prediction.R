@@ -1,9 +1,6 @@
-# File: R/prediction/batch_prediction.R
-#' Orchestrator: latest readings -> features -> all active models -> DB.
-#' Used by the targets pipeline, the API, and scheduled jobs.
+# File: R/prediction_batch_prediction.R
 run_batch_predictions <- function(lookback_hours = 96) {
   log_step("batch_prediction", {
-    # 1. Load active models
     registry <- get_active_models()
     if (nrow(registry) == 0) stop("No active models registered. Train first.")
     models <- setNames(
@@ -11,21 +8,26 @@ run_batch_predictions <- function(lookback_hours = 96) {
       registry$model_name
     )
 
-    # 2. Features (single source of truth)
     readings <- get_readings_from_db(
       since = now_utc() - lubridate::hours(lookback_hours))
     if (nrow(readings) == 0) stop("No recent readings in DB.")
     feats <- compute_features(readings)
 
-    # 3. Latest row per machine -> inference frame
     latest <- feats |>
       dplyr::group_by(machine_id) |>
       dplyr::slice_max(reading_time, n = 1) |>
       dplyr::ungroup()
-    fcols <- grep("^(value_|roll_|lag|delta|dev_|range_|hour_|day_)",
-                  names(feats), value = TRUE)
 
-    # 4. Predict with each model
+    # Derive the EXACT training predictors from the classifier's formula.
+    # All three models were trained on the same feature set; the isotree
+    # detector is column-count sensitive, so a regex guess would crash it.
+    fcols <- tryCatch(
+      all.vars(models$failure_classifier$pre$actions$formula$formula[[3]]),
+      error = function(e)
+        grep("^(value_|roll_|lag|delta|dev_|range_|hour_|day_)",
+             names(feats), value = TRUE))
+    fcols <- intersect(fcols, names(latest))
+
     p_failure <- predict_failure(models[["failure_classifier"]], latest, fcols)
     p_rul     <- predict_rul(models[["rul_model"]], latest, fcols)
     p_anom    <- score_anomaly(models[["anomaly_detector"]], latest, fcols)
@@ -39,7 +41,6 @@ run_batch_predictions <- function(lookback_hours = 96) {
                                combined$rul_days, combined$anomaly_score)
     combined <- dplyr::bind_cols(combined, risk)
 
-    # 5. Persist + alert
     machines_tbl <- get_machines()
     out <- combined |>
       dplyr::left_join(machines_tbl[c("machine_id", "machine_name")],
@@ -63,7 +64,6 @@ run_batch_predictions <- function(lookback_hours = 96) {
   })
 }
 
-#' Load the active artifacts as a named list (API/monitoring helper)
 load_active_models <- function() {
   reg <- get_active_models()
   setNames(lapply(reg$artifact_path, load_model_artifact), reg$model_name)

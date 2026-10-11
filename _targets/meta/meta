@@ -1,8 +1,22 @@
 name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
-training_pipeline_plan|function|2f1b652b25bb65ad
+tuned_classifier|stem|211f7c838698569b|b5d22ed66bb3a2b6|2c530c1562a7fbd1|42484724||t20737.8411429364s|s193b|193|rds|local|vector|||0.031||
+raw_data|stem|5c24fcf3838d8a14|7b2f058343d8f170|2c530c1562a7fbd1|-1101284392||t20737.8613883166s|s717522b|717522|rds|local|vector|||6.672|package 'dplyr' was built under R version 4.4.3. package 'tidyr' was built under R version 4.4.3. package 'purrr' was built under R version 4.4.3. package 'lubridate' was built under R version 4.4.3. package 'xgboost' was built under R version 4.4.3. package 'isotree' was built under R version 4.4.3. package 'ranger' was built under R version 4.4.3. package 'workflows' was built under R version 4.4.3|
+validated|stem|9758e2ad291fde3e|c620965d39aec4f7|302229b6a70dbb01|-1417909282||t20737.8614230135s|s718905b|718905|rds|local|vector|||2.437||
+cleaned|stem|d0f27be1fafa111f|751b6a356b94f5f8|51e0fc4c8f5b5720|-863814015||t20737.8614365785s|s652972b|652972|rds|local|vector|||0.625||
+features_raw|stem|5398b71c2108af1a|67548d714589bed1|7273112865d0d5a4|-1255228805||t20737.8616606664s|s8027723b|8027723|rds|local|vector|||17.969||
+fit_survival|stem|7ce29a871c8a826b|d0f32dcbddcfbcc7|0be76f85591ad5ca|-2098053703||t20737.8616712787s|s2080b|2080|rds|local|vector|||0.594|There was 1 warning in `dplyr::summarise()`. ℹ In argument: `dplyr::across(dplyr::starts_with('value_'), mean, na.rm =   TRUE)`. ℹ In group 1: `machine_id = 1`. Caused by warning: ! The `...` argument of `across()` is deprecated as of dplyr 1.1.0. Supply arguments directly to `.fns` through an anonymous function instead.    # Previously   across(a:b, mean, na.rm = TRUE)    # Now   across(a:b, \(x) mean(x, na.rm = TRUE)) ℹ The deprecated feature was likely used in the rpredictmaint package.   Please report the issue to the authors.|
+labels_data|stem|25600c9c9f0c65ea|16868995d3b79c5c|0be76f85591ad5ca|700955814||t20737.8623283118s|s8035358b|8035358|rds|local|vector|||55.172||
+features_parquet|stem|5398b71c2108af1a|98276137ec63f6e1|956e6fd2918be3ef|-683368283||t20737.8623503576s|s8027723b|8027723|rds|local|vector|||0.422||
+feature_cols|stem|986ec388faf303a8|0b8ad94a034671e8|b09a65b8719c247f|1703259636||t20737.8623740865s|s270b|270|rds|local|vector|||1.828|Passed invalid function arguments: max_depth, eta. These should be passed as a list to argument 'params'. Conversion from argument to 'params' entry will be done automatically, but this behavior will become an error in a future version.. Argument 'objective' is only for custom objectives. For built-in objectives, pass the objective under 'params'. This warning will become an error in a future version.|
+splits|stem|5aa7a3cf0decf683|283e0e55fa28c775|b09a65b8719c247f|-1848090122||t20737.8623914775s|s8046688b|8046688|rds|local|vector|||0.031||
+fit_anomaly|stem|cc7202bc7e302653|bdec7372967dfaf0|985a561cbc15325f|-1022372704||t20737.8624146507s|s3975790b|3975790|rds|local|vector|||0.953||
+fit_classifier|stem|a226a6f02bfbcfb9|cfaefed3ce321431|99b789df467d6641|347743170||t20737.8625066152s|s12163989b|12163989|rds|local|vector|||4.875||
+fit_rul|stem|f7acacd48616bbfb|f8548dc3c0b8cf95|985a561cbc15325f|479565833||t20737.8629430271s|s29678649b|29678649|rds|local|vector|||28.797||
+train_reference_stats|stem|171587f3528b02d8|5eeeadd3d69067ce|8ea83988688192bc|238366734||t20737.8629486572s|s1588890b|1588890|rds|local|vector|||0.078||
+val_predictions|stem|a4c433e2c3b73222|0f327345823280bb|70bbae7137a2a5eb|-1262829530||t20737.8630039882s|s66110b|66110|rds|local|vector|||2.75||
+training_pipeline_plan|function|14ff4f5a4c87fc60
 monitoring_pipeline_plan|function|261027f5c0a441b7
 prediction_pipeline_plan|function|c5f378f4db831a92
-data_pipeline_plan|function|d6dac18df2ab5c0f
-raw_data|stem|c2a3c6543e2e763a|7b2f058343d8f170|2c530c1562a7fbd1|-1101284392||t20737.8411406558s|s717460b|717460|rds|local|vector|||8.937|package 'dplyr' was built under R version 4.4.3. package 'tidyr' was built under R version 4.4.3. package 'purrr' was built under R version 4.4.3. package 'lubridate' was built under R version 4.4.3. package 'xgboost' was built under R version 4.4.3. package 'isotree' was built under R version 4.4.3. package 'ranger' was built under R version 4.4.3. package 'workflows' was built under R version 4.4.3|
-tuned_classifier|stem|211f7c838698569b|b5d22ed66bb3a2b6|2c530c1562a7fbd1|42484724||t20737.8411429364s|s193b|193|rds|local|vector|||0.031||
-validated|stem||307d049903423b13|2eb44debd1623290|-1417909282||t20737.8411478132s||0|rds|local|vector|||0.047||object 'validated' not found
+data_pipeline_plan|function|eafa3907724d657c
+ensemble_weights|stem|1082d7b0800cdced|c3d97c8fc24b6a37|1411b9a08c6fca89|-535101473||t20737.8687697408s|s107b|107|rds|local|vector|||0.266||
+model_metrics|stem||570a9f7c4bb87b89|1411b9a08c6fca89|1883997897||t20737.8687725672s||0|rds|local|vector|||0.125||$ operator is invalid for atomic vectors
