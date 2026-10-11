@@ -5,6 +5,7 @@ if (requireNamespace("pkgload", quietly = TRUE) && file.exists("DESCRIPTION"))
 library(shiny)
 library(plotly)
 library(DT)
+small <- function(...) tags$small(...)  # htmltools alias
 
 ## ---------------- constants & helpers ----------------
 sensor_list   <- c(Temperature = "temperature", Vibration = "vibration",
@@ -457,7 +458,7 @@ server <- function(input, output, session) {
       v <- if (is.null(ls)) NA else ls$value[ls$machine_id == s$machine_id &
                                              ls$sensor_type == st]
       div(class = "leg",
-          span(class = "sw", style = paste0("background:", sensor_colors[[nm]])),
+          span(class = "sw", style = paste0("background:", sensor_colors[[st]])),
           nm, tags$b(if (length(v) && !is.na(v)) round(v, 1) else "—"))
     })
   })
@@ -557,7 +558,7 @@ server <- function(input, output, session) {
       list("info", "circle-info", "Predictions refresh every 60 seconds."),
       list("info", "chart-line", "System performance is within normal range."))
     lapply(ins, function(i)
-      div(class = paste0("insight ", i[1]), icon(i[2]), span(i[3])))
+      div(class = paste0("insight ", i[[1]]), icon(i[[2]]), span(i[[3]])))
   })
   output$dist_donut <- renderPlotly({
     x <- scored(); req(nrow(x) > 0)

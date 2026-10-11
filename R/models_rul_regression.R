@@ -35,7 +35,9 @@ predict_rul <- function(model, new_df, feature_cols) {
   cols <- make.names(feature_cols)
   ok   <- stats::complete.cases(new_df[cols])
   d    <- new_df[ok, cols, drop = FALSE]
-  pred <- predict(model, d)$.pred                                    # FIX: plain predict
+  pred <- tryCatch(
+    predict(model, d)$.pred,
+    error = function(e) { .ensure_model_pkgs(); predict(model, d)$.pred })
   dplyr::bind_cols(new_df[c("machine_id", "reading_time")][ok, ],
                    dplyr::tibble(rul_days = pmax(0, pred)))
 }

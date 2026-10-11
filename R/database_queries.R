@@ -86,7 +86,7 @@ register_model <- function(model_name, version, model_type, metrics, artifact_pa
     ON CONFLICT (model_name, version) DO UPDATE
       SET metrics = EXCLUDED.metrics, artifact_path = EXCLUDED.artifact_path,
           trained_at = now()",
-    params = list(model_name, version, model_type, jsonlite::toJSON(metrics), artifact_path))
+    params = list(model_name, version, model_type, jsonlite::toJSON(as.list(metrics)), artifact_path))
   DBI::dbExecute(con, "
     UPDATE model_registry SET active = FALSE
     WHERE model_name = $1 AND version <> $2",

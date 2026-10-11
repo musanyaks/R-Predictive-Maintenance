@@ -18,6 +18,17 @@ add_failure_label <- function(features_df, maintenance_df, horizon_hours = 48) {
     dplyr::select(-label)
 }
 
+# S3 dispatch of predict() on fitted workflows only resolves reliably when the
+# tidymodels stack is ATTACHED (as targets does). Fresh Rscript/API sessions
+# have hit dispatch failures — so attach on first use, then retry.
+.ensure_model_pkgs <- function() {
+  suppressPackageStartupMessages({
+    if (!"package:workflows" %in% search()) library(workflows)
+    if (!"package:parsnip"   %in% search()) library(parsnip)
+  })
+  invisible(TRUE)
+}
+
 train_failure_classifier <- function(train_df, feature_cols,
                                      trees = 400, tree_depth = 4,
                                      learn_rate = 0.05) {
@@ -39,7 +50,12 @@ predict_failure <- function(model, new_df, feature_cols) {
   cols <- make.names(feature_cols)
   ok   <- stats::complete.cases(new_df[cols])
   d    <- new_df[ok, cols, drop = FALSE]
-  prob <- as.numeric(predict(model, d, type = "prob")$.pred_failure)  # FIX: plain predict
+  prob <- tryCatch(
+    as.numeric(predict(model, d, type = "prob")$.pred_failure),
+    error = function(e) {
+      .ensure_model_pkgs()
+      as.numeric(predict(model, d, type = "prob")$.pred_failure)
+    })
   dplyr::bind_cols(new_df[c("machine_id", "reading_time")][ok, ],
                    dplyr::tibble(failure_prob = prob))
 }

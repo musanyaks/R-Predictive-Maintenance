@@ -1,5 +1,4 @@
-# File: R/monitoring/performance_monitoring.R
-#' Backtest: were high-risk predictions followed by actual events?
+# File: R/monitoring_performance_monitoring.R
 evaluate_predictions <- function(predictions_df, maintenance_df,
                                  horizon_days = 30) {
   events <- maintenance_df |>
@@ -27,8 +26,8 @@ evaluate_predictions <- function(predictions_df, maintenance_df,
   dplyr::tibble(
     metric = c("precision", "recall", "n_evaluated"),
     value  = c(
-      yardstick::precision_vec(truth, est, event_level = "second")$.estimate,
-      yardstick::recall_vec(truth, est, event_level = "second")$.estimate,
+      yardstick::precision_vec(truth, est, event_level = "second"),
+      yardstick::recall_vec(truth, est, event_level = "second"),
       nrow(preds))
   )
 }

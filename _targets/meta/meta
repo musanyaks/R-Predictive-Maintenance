@@ -14,9 +14,10 @@ fit_classifier|stem|a226a6f02bfbcfb9|cfaefed3ce321431|99b789df467d6641|347743170
 fit_rul|stem|f7acacd48616bbfb|f8548dc3c0b8cf95|985a561cbc15325f|479565833||t20737.8629430271s|s29678649b|29678649|rds|local|vector|||28.797||
 train_reference_stats|stem|171587f3528b02d8|5eeeadd3d69067ce|8ea83988688192bc|238366734||t20737.8629486572s|s1588890b|1588890|rds|local|vector|||0.078||
 val_predictions|stem|a4c433e2c3b73222|0f327345823280bb|70bbae7137a2a5eb|-1262829530||t20737.8630039882s|s66110b|66110|rds|local|vector|||2.75||
+ensemble_weights|stem|1082d7b0800cdced|c3d97c8fc24b6a37|1411b9a08c6fca89|-535101473||t20737.8687697408s|s107b|107|rds|local|vector|||0.266||
+model_metrics|stem|14e3c9ab4d2d08b4|570a9f7c4bb87b89|1411b9a08c6fca89|1883997897||t20737.8703456177s|s286b|286|rds|local|vector|||0.187||
 training_pipeline_plan|function|14ff4f5a4c87fc60
 monitoring_pipeline_plan|function|261027f5c0a441b7
 prediction_pipeline_plan|function|c5f378f4db831a92
 data_pipeline_plan|function|eafa3907724d657c
-ensemble_weights|stem|1082d7b0800cdced|c3d97c8fc24b6a37|1411b9a08c6fca89|-535101473||t20737.8687697408s|s107b|107|rds|local|vector|||0.266||
-model_metrics|stem||570a9f7c4bb87b89|1411b9a08c6fca89|1883997897||t20737.8687725672s||0|rds|local|vector|||0.125||$ operator is invalid for atomic vectors
+registry_update|stem|49b504a63c4f58e8|8103fee7b9b60b4e|e7753a4b0e2b3861|829479538||t20737.8778273002s|s48b|48|rds|local|vector|||19||
