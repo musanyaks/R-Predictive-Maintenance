@@ -1,7 +1,5 @@
 # File: database/seed/seed_database.R
-# Generates a synthetic fleet + history, writes CSVs to data/raw,
-# migrates the schema, and loads everything into Postgres.
-pkgload::load_all()  # or library(rpredictmaint)
+pkgload::load_all()
 
 set.seed(42)
 n_machines <- 10
@@ -16,7 +14,10 @@ machines <- tibble::tibble(
   status         = "active"
 )
 
-hours <- days * 24
+hours      <- days * 24
+ramp_start <- start + lubridate::days(days - 10)
+degrading  <- c("PUMP-003", "PUMP-007", "PUMP-010")
+
 sensor_data <- tidyr::expand_grid(
   machine_name = machines$machine_name,
   reading_time = seq(start, start + lubridate::hours(hours - 1), by = "hour"),
@@ -29,15 +30,16 @@ sensor_data <- tidyr::expand_grid(
       sensor_type == "pressure"    ~ 100,
       TRUE                         ~ 1750
     ),
-    drift = as.numeric(reading_time - start) / (24 * 3600) *
-            rnorm(dplyr::n(), 0.02, 0.01),
+    # Explicit units — never trust difftime auto-units
+    elapsed_hours = as.numeric(difftime(reading_time, start, units = "hours")),
+    drift = (elapsed_hours / 24) * rnorm(dplyr::n(), 0.02, 0.01),
     value = base + drift + rnorm(dplyr::n(), 0, base * 0.03),
-    # Inject a degradation ramp in the last 10 days for 3 machines
+    # Degradation ramp: +0.15 sensor units per hour since the ramp began
     value = value + dplyr::if_else(
-      machine_name %in% c("PUMP-003", "PUMP-007", "PUMP-010") &
-        reading_time > start + lubridate::days(days - 10),
-      (as.numeric(reading_time - start - lubridate::days(days - 10)) / 3600) * 0.15,
-      0)
+      machine_name %in% degrading & reading_time > ramp_start,
+      pmax(elapsed_hours - (days - 10) * 24, 0) * 0.15,
+      0
+    )
   ) |>
   dplyr::select(machine_name, sensor_type, value, reading_time)
 
@@ -56,19 +58,28 @@ maintenance_history <- tidyr::expand_grid(
   dplyr::select(-month) |>
   dplyr::arrange(machine_name, performed_at)
 
-# 1. Write raw CSVs (source of truth for the offline pipeline)
-fs::dir_create("data/raw")
+# --- Inject failure events (labels need them; without: 0 failures = dead training) ---
+failures <- tibble::tibble(
+  machine_name     = degrading,
+  maintenance_type = "failure",
+  description      = "injected failure (demo)",
+  downtime_hours   = c(12, 8, 16),
+  performed_at     = start + lubridate::days(days) - lubridate::hours(c(6, 18, 40))
+)
+maintenance_history <- dplyr::bind_rows(maintenance_history, failures) |>
+  dplyr::arrange(machine_name, performed_at)
+
+dir.create("data/raw", showWarnings = FALSE, recursive = TRUE)
 readr::write_csv(machines,            "data/raw/machine_metadata.csv")
 readr::write_csv(sensor_data,         "data/raw/sensor_data.csv")
 readr::write_csv(maintenance_history, "data/raw/maintenance_history.csv")
 
-# 2. Migrate schema + load into Postgres
 rpredictmaint::run_migrations()
 
 con <- pool::poolCheckout(rpredictmaint::get_pool())
-on.exit(pool::poolReturn(con), add = TRUE)
 DBI::dbWriteTable(con, "machines", machines, append = TRUE)
 lookup <- DBI::dbGetQuery(con, "SELECT machine_id, machine_name FROM machines")
+pool::poolReturn(con)
 
 rpredictmaint::ingest_readings(sensor_data, lookup)
 rpredictmaint::insert_maintenance(maintenance_history, lookup)

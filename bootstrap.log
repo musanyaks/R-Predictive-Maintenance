@@ -1,0 +1,42 @@
+
+Skipping 46 packages ahead of CRAN: rlang, diffobj, callr, withr, stringi, progressr, lava, data.table, xfun, tinytex, knitr, bslib, parallelly, listenv, ipred, RcppArmadillo, Rcpp, rmarkdown, future, recipes, dials, cpp11, parsnip, broom, litedown, xml2, curl, shades, ggfittext, bit64, openssl, zoo, rstudioapi, modeldata, shiny, gggenes, clipr, webutils, httr, doFuture, fracdiff, colorspace, shapviz, pool, logger, arrow
+Installing packages into 'C:/Users/HomePC/AppData/Local/R/win-library/4.4'
+(as 'lib' is unspecified)
+
+  There is a binary version available (and will be installed) but the
+  source version is later:
+        binary source
+pkgload  1.5.2  1.5.3
+
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.4/pkgload_1.5.2.zip'
+Content type 'application/zip' length 226507 bytes (221 KB)
+==================================================
+downloaded 221 KB
+
+trying URL 'https://cloud.r-project.org/bin/windows/contrib/4.4/testthat_3.3.2.zip'
+Content type 'application/zip' length 2519987 bytes (2.4 MB)
+==================================================
+downloaded 2.4 MB
+
+package 'pkgload' successfully unpacked and MD5 sums checked
+package 'testthat' successfully unpacked and MD5 sums checked
+
+The downloaded binary packages are in
+	C:\Users\HomePC\AppData\Local\Temp\Rtmpm2WVfl\downloaded_packages
+Installing package into 'C:/Users/HomePC/AppData/Local/R/win-library/4.4'
+(as 'lib' is unspecified)
+* installing *source* package 'rpredictmaint' ...
+** using staged installation
+** R
+** data
+** byte-compile and prepare package for lazy loading
+** help
+No man pages found in package  'rpredictmaint' 
+*** installing help indices
+** building package indices
+** testing if installed package can be loaded from temporary location
+** testing if installed package can be loaded from final location
+** testing if installed package keeps a record of temporary installation path
+* DONE (rpredictmaint)
+
+DONE. Verify with:  Rscript -e 'rpredictmaint::db_ping()'

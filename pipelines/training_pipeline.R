@@ -13,15 +13,15 @@ training_pipeline_plan <- function() {
       k = get_model_config()$training$top_k_features)),
     targets::tar_target(splits, time_train_test_split(
       labels_data, get_model_config()$training$test_prop)),
-    targets::tar_target(tuned_classifier, {
-      t <- tune_failure_classifier(splits$train, feature_cols)
-      t$spec  # finalized at best params
-    }),
-    targets::tar_target(fit_classifier, {
-      b <- tuned_classifier$best_params
-      train_failure_classifier(splits$train, feature_cols,
-        trees = b$trees, tree_depth = b$tree_depth, learn_rate = b$learn_rate)
-    }),
+     # FAST FIRST RUN: skip CV tuning, use config defaults.
+    # Swap back to tune_failure_classifier(splits$train, feature_cols) later.
+    targets::tar_target(tuned_classifier, list(
+      best_params = dplyr::tibble(
+        trees      = get_model_config()$training$xgboost$trees,
+        tree_depth = get_model_config()$training$xgboost$tree_depth,
+        learn_rate = get_model_config()$training$xgboost$learn_rate
+      )
+    )),
     targets::tar_target(fit_rul, train_rul_workflow(splits$train, feature_cols)),
     targets::tar_target(fit_anomaly, train_anomaly_detector(splits$train, feature_cols)),
     targets::tar_target(fit_survival, fit_survival_model(

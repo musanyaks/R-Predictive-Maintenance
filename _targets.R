@@ -11,7 +11,6 @@ tar_option_set(
     "rpredictmaint", "dplyr", "tidyr", "purrr", "lubridate",
     "arrow", "xgboost", "isotree", "ranger", "workflows", "parsnip"
   ),
-  format = "parquet",
   error = "workspace"
 )
 
