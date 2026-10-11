@@ -6,6 +6,14 @@ n_machines <- 10
 days       <- 90
 start      <- Sys.time() - lubridate::days(days)
 
+# Degradation episodes: ramp begins at ramp_h, failure (repair) at fail_h.
+# Two episodes land in the TRAIN window, one in TEST, so labels exist in both.
+episode_spec <- tibble::tibble(
+  machine_name = c("PUMP-003", "PUMP-007", "PUMP-010"),
+  ramp_h       = c(40, 58, 78) * 24,
+  fail_h       = c(48, 66, 89.5) * 24
+)
+
 machines <- tibble::tibble(
   machine_name   = sprintf("PUMP-%03d", 1:n_machines),
   machine_type   = sample(c("centrifugal_pump", "compressor", "motor"), n_machines, TRUE),
@@ -14,13 +22,9 @@ machines <- tibble::tibble(
   status         = "active"
 )
 
-hours      <- days * 24
-ramp_start <- start + lubridate::days(days - 10)
-degrading  <- c("PUMP-003", "PUMP-007", "PUMP-010")
-
 sensor_data <- tidyr::expand_grid(
   machine_name = machines$machine_name,
-  reading_time = seq(start, start + lubridate::hours(hours - 1), by = "hour"),
+  reading_time = seq(start, start + lubridate::hours(days * 24 - 1), by = "hour"),
   sensor_type  = c("temperature", "vibration", "pressure", "rpm")
 ) |>
   dplyr::mutate(
@@ -28,18 +32,16 @@ sensor_data <- tidyr::expand_grid(
       sensor_type == "temperature" ~ 70,
       sensor_type == "vibration"   ~ 3,
       sensor_type == "pressure"    ~ 100,
-      TRUE                         ~ 1750
-    ),
-    # Explicit units — never trust difftime auto-units
+      TRUE                         ~ 1750),
     elapsed_hours = as.numeric(difftime(reading_time, start, units = "hours")),
-    drift = (elapsed_hours / 24) * rnorm(dplyr::n(), 0.02, 0.01),
-    value = base + drift + rnorm(dplyr::n(), 0, base * 0.03),
-    # Degradation ramp: +0.15 sensor units per hour since the ramp began
-    value = value + dplyr::if_else(
-      machine_name %in% degrading & reading_time > ramp_start,
-      pmax(elapsed_hours - (days - 10) * 24, 0) * 0.15,
-      0
-    )
+    ep       = match(machine_name, episode_spec$machine_name),
+    in_ramp  = !is.na(ep) &
+               elapsed_hours >= episode_spec$ramp_h[ep] &
+               elapsed_hours <  episode_spec$fail_h[ep],
+    drift    = (elapsed_hours / 24) * rnorm(dplyr::n(), 0.02, 0.01),
+    value    = base + drift + rnorm(dplyr::n(), 0, base * 0.03) +
+               dplyr::if_else(in_ramp,
+                              0.15 * (elapsed_hours - episode_spec$ramp_h[ep]), 0)
   ) |>
   dplyr::select(machine_name, sensor_type, value, reading_time)
 
@@ -52,21 +54,15 @@ maintenance_history <- tidyr::expand_grid(
     performed_at     = start + lubridate::days(30 * month + sample(1:28, 1)),
     maintenance_type = sample(c("preventive", "preventive", "corrective"), 1),
     description      = maintenance_type,
-    downtime_hours   = sample(c(2, 4, 8), 1)
-  ) |>
+    downtime_hours   = sample(c(2, 4, 8), 1)) |>
   dplyr::ungroup() |>
   dplyr::select(-month) |>
-  dplyr::arrange(machine_name, performed_at)
-
-# --- Inject failure events (labels need them; without: 0 failures = dead training) ---
-failures <- tibble::tibble(
-  machine_name     = degrading,
-  maintenance_type = "failure",
-  description      = "injected failure (demo)",
-  downtime_hours   = c(12, 8, 16),
-  performed_at     = start + lubridate::days(days) - lubridate::hours(c(6, 18, 40))
-)
-maintenance_history <- dplyr::bind_rows(maintenance_history, failures) |>
+  dplyr::bind_rows(episode_spec |>
+    dplyr::transmute(machine_name,
+                     maintenance_type = "failure",
+                     description      = "injected failure (demo)",
+                     downtime_hours   = c(12, 8, 16),
+                     performed_at     = start + lubridate::seconds(fail_h * 3600))) |>
   dplyr::arrange(machine_name, performed_at)
 
 dir.create("data/raw", showWarnings = FALSE, recursive = TRUE)

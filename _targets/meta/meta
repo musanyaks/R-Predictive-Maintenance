@@ -1,0 +1,8 @@
+name|type|data|command|depend|seed|path|time|size|bytes|format|repository|iteration|parent|children|seconds|warnings|error
+training_pipeline_plan|function|2f1b652b25bb65ad
+monitoring_pipeline_plan|function|261027f5c0a441b7
+prediction_pipeline_plan|function|c5f378f4db831a92
+data_pipeline_plan|function|d6dac18df2ab5c0f
+raw_data|stem|c2a3c6543e2e763a|7b2f058343d8f170|2c530c1562a7fbd1|-1101284392||t20737.8411406558s|s717460b|717460|rds|local|vector|||8.937|package 'dplyr' was built under R version 4.4.3. package 'tidyr' was built under R version 4.4.3. package 'purrr' was built under R version 4.4.3. package 'lubridate' was built under R version 4.4.3. package 'xgboost' was built under R version 4.4.3. package 'isotree' was built under R version 4.4.3. package 'ranger' was built under R version 4.4.3. package 'workflows' was built under R version 4.4.3|
+tuned_classifier|stem|211f7c838698569b|b5d22ed66bb3a2b6|2c530c1562a7fbd1|42484724||t20737.8411429364s|s193b|193|rds|local|vector|||0.031||
+validated|stem||307d049903423b13|2eb44debd1623290|-1417909282||t20737.8411478132s||0|rds|local|vector|||0.047||object 'validated' not found

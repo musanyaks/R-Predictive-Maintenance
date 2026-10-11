@@ -4,8 +4,7 @@ data_pipeline_plan <- function() {
     targets::tar_target(raw_data, load_raw_data()),
     targets::tar_target(validated, {
       stop_if_invalid(validate_machines(raw_data$machines), "machines")
-      # sensor CSV uses machine_name; add machine_id after machines validated
-      machine_map <- clean_machines(validated$machines) |>
+      machine_map <- clean_machines(raw_data$machines) |>   # FIX: was self-reference
         dplyr::select(machine_name, machine_id)
       sensors <- raw_data$sensors |>
         dplyr::left_join(machine_map, by = "machine_name")

@@ -12,16 +12,17 @@ training_pipeline_plan <- function() {
       threshold = get_model_config()$training$corr_threshold,
       k = get_model_config()$training$top_k_features)),
     targets::tar_target(splits, time_train_test_split(
-      labels_data, get_model_config()$training$test_prop)),
-     # FAST FIRST RUN: skip CV tuning, use config defaults.
-    # Swap back to tune_failure_classifier(splits$train, feature_cols) later.
+      labels_data, 1 - get_model_config()$training$test_prop)),  # FIX: pass TRAIN prop
     targets::tar_target(tuned_classifier, list(
       best_params = dplyr::tibble(
         trees      = get_model_config()$training$xgboost$trees,
         tree_depth = get_model_config()$training$xgboost$tree_depth,
-        learn_rate = get_model_config()$training$xgboost$learn_rate
-      )
-    )),
+        learn_rate = get_model_config()$training$xgboost$learn_rate))),
+    targets::tar_target(fit_classifier, {
+      b <- tuned_classifier$best_params
+      train_failure_classifier(splits$train, feature_cols,
+        trees = b$trees, tree_depth = b$tree_depth, learn_rate = b$learn_rate)
+    }),
     targets::tar_target(fit_rul, train_rul_workflow(splits$train, feature_cols)),
     targets::tar_target(fit_anomaly, train_anomaly_detector(splits$train, feature_cols)),
     targets::tar_target(fit_survival, fit_survival_model(
@@ -42,30 +43,27 @@ training_pipeline_plan <- function() {
     targets::tar_target(model_metrics, {
       dplyr::bind_rows(
         classification_metrics(val_predictions$failure, val_predictions$failure_prob),
-        regression_metrics(val_predictions$rul_truth, val_predictions$rul_days)
-      )
+        regression_metrics(val_predictions$rul_truth, val_predictions$rul_days))
     }),
     targets::tar_target(registry_update, {
       ver <- format(Sys.time(), "%Y%m%d.%H%M%S")
       register_model("failure_classifier", ver, "classification",
-                     setNames(model_metrics$value, model_metrics$metric),
-                     save_model_artifact(fit_classifier, "xgboost", "classification"))
+        setNames(model_metrics$value, model_metrics$metric),
+        save_model_artifact(fit_classifier, "xgboost", "classification"))
       register_model("rul_model", ver, "rul", list(),
-                     save_model_artifact(fit_rul, "rul_model", "regression"))
+        save_model_artifact(fit_rul, "rul_model", "regression"))
       register_model("anomaly_detector", ver, "anomaly", list(),
-                     save_model_artifact(fit_anomaly, "isolation_forest", "anomaly"))
+        save_model_artifact(fit_anomaly, "isolation_forest", "anomaly"))
       register_model("survival_model", ver, "survival", list(),
-                     save_model_artifact(fit_survival, "survreg", "regression"))
-      register_model("ensemble", ver, "ensemble",
-                     as.list(ensemble_weights),
-                     save_model_artifact(ensemble_weights, "ensemble", "classification"))
+        save_model_artifact(fit_survival, "survreg", "regression"))
+      register_model("ensemble", ver, "ensemble", as.list(ensemble_weights),
+        save_model_artifact(ensemble_weights, "ensemble", "classification"))
       TRUE
     }),
     targets::tar_target(train_reference_stats, {
-      # Snapshot training feature distributions for drift monitoring
       dir.create("data/processed", showWarnings = FALSE)
-      arrow::write_parquet(splits$train, "data/processed/features_test.parquet")
-      splits$train
+      arrow::write_parquet(splits$test, "data/processed/features_test.parquet")
+      splits$test
     })
   )
 }
