@@ -63,11 +63,15 @@ clean_feat_label <- function(x) {
   tools::toTitleCase(gsub("_", " ", x))
 }
 
-donut <- function(value, color) {
-  plot_ly(values = c(value, max(100 - value, 0)), type = "pie", hole = 0.72,
-          sort = FALSE, marker = list(colors = c(color, "#e8edf5")),
+donut <- function(values, colors, center, w = 110, h = 110) {
+  plot_ly(values = values, type = "pie", hole = 0.75, sort = FALSE,
+          marker = list(colors = colors),
           textinfo = "none", hoverinfo = "none", showlegend = FALSE) |>
-    layout(margin = list(0, 0, 0, 0), paper_bgcolor = "transparent") |>
+    layout(width = w, height = h, margin = list(0, 0, 0, 0),
+           paper_bgcolor = "transparent",
+           annotations = list(
+             text = center, x = 0.5, y = 0.5, xref = "paper", yref = "paper",
+             showarrow = FALSE, font = list(size = 13, color = "#1c2b46"))) |>
     config(displayModeBar = FALSE)
 }
 
@@ -195,10 +199,8 @@ server <- function(input, output, session) {
                 selectInput("sel_machine", NULL, choices = NULL, width = "100%")),
             div(class = "sel-flex",
                 uiOutput("sel_photo"),
-                div(class = "donut-col",
-                    div(class = "donut-wrap",
-                        plotlyOutput("health_donut", height = "120px"),
-                        div(class = "center-label", uiOutput("donut_center")))),
+                div(style = "width:110px;flex-shrink:0",
+                    plotlyOutput("health_donut", height = "110px", width = "110px")),
                 div(class = "stats-col", uiOutput("sel_stats"))),
             uiOutput("sel_chips")),
         div(class = "card span3",
@@ -232,8 +234,7 @@ server <- function(input, output, session) {
         div(class = "card span2",
             div(class = "card-head", h3("Distribution")),
             div(class = "donut-wrap",
-                plotlyOutput("dist_donut", height = "125px"),
-                div(class = "center-label", uiOutput("dist_center"))),
+                plotlyOutput("dist_donut", height = "130px", width = "130px")),
             div(class = "dist-legend", uiOutput("dist_legend"))),
         div(class = "card span3",
             div(class = "card-head", h3("Quick Actions")),
@@ -387,11 +388,11 @@ output$sel_photo <- renderUI({
 })
 
   output$health_donut <- renderPlotly({
-    s <- sel(); req(s); donut(s$health, health_col(s$health))
-  })
-  output$donut_center <- renderUI({
     s <- sel(); req(s)
-    HTML(paste0("<b>", round(s$health), "%</b><span>Health Score</span>"))
+    donut(c(s$health, max(100 - s$health, 0)),
+          c(health_col(s$health), "#e8edf5"),
+          paste0("<b>", round(s$health), "%</b><br>",
+                 "<span style='font-size:9px;color:#7b8aa5'>Health</span>"))
   })
   output$sel_stats <- renderUI({
     s <- sel(); req(s)
@@ -597,16 +598,10 @@ output$sel_photo <- renderUI({
     x <- scored(); req(nrow(x) > 0)
     n <- c(sum(x$status == "online"), sum(x$status == "atrisk"),
            sum(x$status == "critical"))
-    plot_ly(labels = c("Healthy", "At Risk", "Critical"), values = unname(n),
-            type = "pie", hole = 0.62, sort = FALSE,
-            marker = list(colors = c("#1a9e55", "#f0b429", "#d43a3a")),
-            showlegend = FALSE) |>
-      layout(margin = list(0, 0, 0, 0), paper_bgcolor = "transparent") |>
-      config(displayModeBar = FALSE)
-  })
-  output$dist_center <- renderUI({
-    x <- scored(); req(nrow(x) > 0)
-    HTML(paste0("<b>", nrow(x), "</b><span>Total Machines</span>"))
+    donut(unname(n), c("#1a9e55", "#f0b429", "#d43a3a"),
+          paste0("<b>", nrow(x), "</b><br>",
+                 "<span style='font-size:9px;color:#7b8aa5'>Machines</span>"),
+          w = 130, h = 130)
   })
   output$dist_legend <- renderUI({
     x <- scored(); req(nrow(x) > 0)
