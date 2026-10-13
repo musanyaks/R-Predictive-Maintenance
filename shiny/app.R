@@ -65,7 +65,7 @@ clean_feat_label <- function(x) {
   tools::toTitleCase(gsub("_", " ", x))
 }
 
-donut <- function(values, colors, center, w = 120, h = 120) {
+donut <- function(values, colors, center, w = 120, h = 120, fs = 13) {
   plot_ly(values = values, type = "pie", hole = 0.75, sort = FALSE,
           marker = list(colors = colors),
           textinfo = "none", hoverinfo = "none", showlegend = FALSE) |>
@@ -73,7 +73,7 @@ donut <- function(values, colors, center, w = 120, h = 120) {
            paper_bgcolor = "transparent",
            annotations = list(
              text = center, x = 0.5, y = 0.5, xref = "paper", yref = "paper",
-             showarrow = FALSE, font = list(size = 13, color = "#1c2b46"))) |>
+             showarrow = FALSE, font = list(size = fs, color = "#1c2b46"))) |>
     config(displayModeBar = FALSE)
 }
 
@@ -115,7 +115,7 @@ server <- function(input, output, session) {
       preds    = get_latest_predictions(),
       alerts   = get_open_alerts(),
       maint    = get_maintenance_from_db(),
-      readings = get_readings_from_db(since = now_utc() - lubridate::hours(48))
+      readings = get_readings_from_db(since = now_utc() - lubridate::hours(168))
     ), error = function(e) list(
       machines = NULL, preds = NULL, alerts = NULL, maint = NULL, readings = NULL)))
 

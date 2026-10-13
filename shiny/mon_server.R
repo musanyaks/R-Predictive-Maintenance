@@ -211,7 +211,7 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
     cards <- lapply(names(sensor_meta), function(nm) {
       d <- r[r$machine_id == m$machine_id & r$sensor_type == nm, ]
       d <- d[order(d$reading_time), ]
-      if (nrow(d) < 6) return(NULL)
+      if (nrow(d) < 4) return(NULL)
       now_v <- mean(tail(d$value, 3))
       tmax  <- max(d$reading_time)
       past  <- d$value[d$reading_time >= tmax - lubridate::hours(2) &
@@ -223,7 +223,7 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
       arrow <- if (dcls == "up") "&uarr;"
                else if (dcls == "down") "&darr;" else "&harr;"
       sm    <- sensor_meta[[nm]]
-      div(class = "mini-card", style = "grid-column:span 2",
+      div(class = "mini-card", style = "grid-column:span 3",
           div(class = "lab",
               icon(sm$ic, style = paste0("color:", sm$col)), sm$lab),
           div(class = "val", paste0(round(now_v, 1), sm$unit)),
@@ -245,7 +245,7 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
         r <- fleet()$readings; req(r, nrow(r) > 0)
         d <- r[r$machine_id == m$machine_id & r$sensor_type == sn_, ]
         d <- d[order(d$reading_time), ]
-        req(nrow(d) >= 5)
+        req(nrow(d) >= 3)
         d <- tail(d, 24)
         plot_ly(d, x = ~reading_time, y = ~value,
                 type = "scatter", mode = "lines",
