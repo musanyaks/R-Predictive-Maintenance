@@ -332,7 +332,7 @@ server <- function(input, output, session) {
             local({
               src <- machine_img(r$machine_name)
               if (file.exists(file.path(project_root(), "shiny", "www", src)))
-                tags$img(src = src, class = "thumb", alt = r$machine_name)
+                tags$img(src = src, class = "thumb", alt = r$machine_name, style = "width:30px;height:30px;object-fit:cover;border-radius:8px;display:block;flex-shrink:0")
               else
                 tags$span(class = "thumb thumb-fallback", icon("industry"))
             }),
@@ -379,7 +379,7 @@ output$sel_photo <- renderUI({
   s <- sel(); req(s)
   src <- machine_img(s$machine_name)
   if (file.exists(file.path(project_root(), "shiny", "www", src))) {
-    tags$img(src = src, class = "photo-img", alt = s$type_lab)
+    tags$img(src = src, class = "photo-img", alt = s$type_lab, style = "width:118px;height:128px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0")
   } else {
     div(class = "photo-tile", icon("industry"))
   }
