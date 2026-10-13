@@ -172,3 +172,16 @@ table.models tr.best td:first-child{color:var(--green)}
 
 .thumb{width:30px;height:30px;border-radius:8px;object-fit:cover;flex-shrink:0;display:block}
 .thumb-fallback{display:grid;place-items:center;background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;font-size:13px}
+
+/* mock-style selected-machine layout */
+.photo-img{width:150px;height:140px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0}
+.sel-flex{align-items:center}
+.stat-box{background:#f6f9fe;border-radius:10px;padding:8px 11px;margin-bottom:8px}
+.stat-box .lab{font-size:10.5px;color:var(--muted);font-weight:600;display:flex;align-items:center;gap:6px}
+.stat-box .val{font-weight:800;font-size:16px;margin-top:2px}
+.stat-box .val.red{color:var(--red)}
+.select-wrap{position:relative;margin-bottom:10px}
+.select-wrap .sel-ic{position:absolute;left:10px;top:50%;transform:translateY(-50%);color:#2563eb;z-index:5;pointer-events:none}
+.select-wrap .selectize-input,.select-wrap select{padding-left:32px !important}
+table.status{font-size:11px}
+table.status td{padding:5px 6px}

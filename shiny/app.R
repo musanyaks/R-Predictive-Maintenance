@@ -190,7 +190,9 @@ server <- function(input, output, session) {
             uiOutput("machine_table")),
         div(class = "card span4",
             div(class = "card-head", h3("Selected Machine"), uiOutput("sel_badge")),
-            selectInput("sel_machine", NULL, choices = NULL, width = "100%"),
+            div(class = "select-wrap",
+                icon("industry", class = "sel-ic"),
+                selectInput("sel_machine", NULL, choices = NULL, width = "100%")),
             div(class = "sel-flex",
                 uiOutput("sel_photo"),
                 div(class = "donut-col",
@@ -198,7 +200,6 @@ server <- function(input, output, session) {
                         plotlyOutput("health_donut", height = "120px"),
                         div(class = "center-label", uiOutput("donut_center")))),
                 div(class = "stats-col", uiOutput("sel_stats"))),
-            uiOutput("sel_action"),
             uiOutput("sel_chips")),
         div(class = "card span3",
             div(class = "card-head", h3("Recent Alerts"),
@@ -379,7 +380,7 @@ output$sel_photo <- renderUI({
   s <- sel(); req(s)
   src <- machine_img(s$machine_name)
   if (file.exists(file.path(project_root(), "shiny", "www", src))) {
-    tags$img(src = src, class = "photo-img", alt = s$type_lab, style = "width:118px;height:128px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0")
+    tags$img(src = src, class = "photo-img", alt = s$type_lab, style = "width:150px;height:140px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0")
   } else {
     div(class = "photo-tile", icon("industry"))
   }
@@ -395,24 +396,23 @@ output$sel_photo <- renderUI({
   output$sel_stats <- renderUI({
     s <- sel(); req(s)
     rul_txt <- if (is.na(s$rul_days) || s$rul_days > 999) "30+ days"
-               else paste0(floor(s$rul_days), " – ", ceiling(s$rul_days), " days")
-    tagList(
-      div(class = "stat-row", span(class = "lab", "Failure Probability"),
-          span(class = "val red", paste0(round(100 * s$failure_prob, 1), "%"))),
-      div(class = "stat-row", span(class = "lab", icon("calendar-days"),
-                                   " Estimated RUL"),
-          span(class = "val", rul_txt)))
-  })
-  output$sel_action <- renderUI({
-    s <- sel(); req(s)
+               else paste0(floor(s$rul_days), " \u2013 ", ceiling(s$rul_days), " days")
     rec <- tryCatch(
       recommend_maintenance(s$machine_id, s$disp_name, s$risk_level,
                             s$risk_score, s$rul_days, list(summary = ""))$action,
       error = function(e) "Routine monitoring")
-    div(class = "stat-row",
-        span(class = "lab", icon("screwdriver-wrench"), " Recommended Action"),
-        span(style = "font-weight:700;font-size:11.5px", rec))
+    tagList(
+      div(class = "stat-box",
+          span(class = "lab", "Failure Probability"),
+          div(class = "val red", paste0(round(100 * s$failure_prob, 1), "%"))),
+      div(class = "stat-box",
+          span(class = "lab", icon("calendar-days"), "Estimated RUL"),
+          div(class = "val", rul_txt)),
+      div(class = "stat-box",
+          span(class = "lab", icon("screwdriver-wrench"), "Recommended Action"),
+          div(style = "font-weight:700;font-size:12px;margin-top:2px", rec)))
   })
+
   output$sel_chips <- renderUI({
     s <- sel(); req(s)
     tags$div(class = "chips",
