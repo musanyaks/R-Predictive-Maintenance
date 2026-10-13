@@ -22,14 +22,16 @@ mon_tab_ui <- function() {
       column(3, div(class = "legend-side", uiOutput("mon_side")))))
 
   det_card <- div(class = "card", style = "grid-column:span 4",
-    div(class = "card-head", h3("Machine Details"), uiOutput("mon_badge")),
+    div(class = "card-head",
+        div(style = "display:flex;align-items:center;gap:8px",
+            icon("industry", style = "color:#2563eb"),
+            h3("Machine Details"))),
     uiOutput("mon_details"))
 
   grid1 <- div(class = "grid12", tel_card, det_card)
 
   grid2 <- div(class = "grid12",
-    div(style = "grid-column:span 8;display:grid;grid-template-columns:repeat(12,1fr);gap:14px;align-items:start",
-        uiOutput("mon_minis")),
+    div(style = "grid-column:span 8", uiOutput("mon_minis")),
     div(class = "card", style = "grid-column:span 4",
         div(class = "card-head", h3("Machine Status"),
             actionLink("mon_view_all", "View All", class = "link-sm")),

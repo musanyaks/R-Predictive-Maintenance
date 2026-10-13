@@ -223,7 +223,7 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
       arrow <- if (dcls == "up") "&uarr;"
                else if (dcls == "down") "&darr;" else "&harr;"
       sm    <- sensor_meta[[nm]]
-      div(class = "mini-card", style = "grid-column:span 3",
+      div(class = "mini-card",
           div(class = "lab",
               icon(sm$ic, style = paste0("color:", sm$col)), sm$lab),
           div(class = "val", paste0(round(now_v, 1), sm$unit)),
