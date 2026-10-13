@@ -331,7 +331,7 @@ server <- function(input, output, session) {
           tags$div(style = "display:flex;align-items:center;gap:8px",
             local({
               src <- machine_img(r$machine_name)
-              if (file.exists(file.path("shiny", "www", src)))
+              if (file.exists(file.path(project_root(), "shiny", "www", src)))
                 tags$img(src = src, class = "thumb", alt = r$machine_name)
               else
                 tags$span(class = "thumb thumb-fallback", icon("industry"))
@@ -378,7 +378,7 @@ server <- function(input, output, session) {
 output$sel_photo <- renderUI({
   s <- sel(); req(s)
   src <- machine_img(s$machine_name)
-  if (file.exists(file.path("shiny", "www", src))) {
+  if (file.exists(file.path(project_root(), "shiny", "www", src))) {
     tags$img(src = src, class = "photo-img", alt = s$type_lab)
   } else {
     div(class = "photo-tile", icon("industry"))
