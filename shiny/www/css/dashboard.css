@@ -185,3 +185,42 @@ table.models tr.best td:first-child{color:var(--green)}
 .select-wrap .selectize-input,.select-wrap select{padding-left:32px !important}
 table.status{font-size:11px}
 table.status td{padding:5px 6px}
+
+/* Live Monitoring tab */
+.mon-head{display:flex;align-items:center;gap:16px;margin-bottom:16px}
+.mon-head h2{font-size:22px}
+.mon-head .sub,.live-badge .sub{color:var(--muted);font-size:12px}
+.live-badge{text-align:right}
+.live-badge .top{display:flex;align-items:center;gap:8px;font-weight:800;
+  color:var(--green);font-size:13px;justify-content:flex-end}
+.pulse{width:9px;height:9px;border-radius:50%;background:var(--green);
+  animation:pulse 1.6s infinite}
+@keyframes pulse{0%{box-shadow:0 0 0 0 rgba(26,158,85,.45)}
+  70%{box-shadow:0 0 0 9px rgba(26,158,85,0)}100%{box-shadow:0 0 0 0 rgba(26,158,85,0)}}
+.mini-card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+  box-shadow:var(--shadow);padding:12px}
+.mini-card .lab{display:flex;gap:7px;align-items:center;font-size:11px;
+  color:var(--muted);font-weight:600}
+.mini-card .val{font-size:19px;font-weight:800;margin:4px 0 2px}
+.mini-card .delta{font-size:10.5px;font-weight:700;margin-bottom:4px}
+.delta.up{color:var(--red)}.delta.down{color:var(--green)}.delta.flat{color:var(--muted)}
+.detail-top{display:flex;gap:12px;align-items:center;margin-bottom:10px}
+.detail-top img{width:120px;height:92px;object-fit:cover;border-radius:10px}
+.badge-run{background:#e7f7ee;color:var(--green);border-radius:999px;padding:4px 12px;
+  font-size:10.5px;font-weight:800;display:inline-block}
+.badge-warn{background:#fff6e5;color:#e08a00;border-radius:999px;padding:4px 12px;
+  font-size:10.5px;font-weight:800;display:inline-block}
+.detail-metrics{display:flex;gap:10px;align-items:center;margin:10px 0}
+.dm{flex:1;text-align:center}
+.dm .lab{font-size:10px;color:var(--muted);font-weight:600}
+.dm .val{font-size:16px;font-weight:800;margin-top:2px}
+.dm .val.red{color:var(--red)}
+.banner{display:flex;align-items:center;gap:14px;border-radius:14px;padding:16px;height:100%}
+.banner.ok{background:#e9f9ef;border:1px solid #cdeed9}
+.banner.warn{background:#fff6e5;border:1px solid #f0ddb0}
+.banner .bicon{width:44px;height:44px;border-radius:50%;display:grid;
+  place-items:center;color:#fff;background:var(--green);flex-shrink:0}
+.banner.warn .bicon{background:var(--amber)}
+.banner b{font-size:14px;display:block}
+.banner small{color:var(--muted)}
+.banner .art{margin-left:auto;font-size:44px;color:#cfe0f5}

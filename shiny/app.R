@@ -7,6 +7,8 @@ library(plotly)
 library(DT)
 
 small <- function(...) tags$small(...)
+source(file.path(project_root(), "shiny", "mon_ui.R"), local = TRUE)
+source(file.path(project_root(), "shiny", "mon_server.R"), local = TRUE)
 
 machine_img <- function(machine_name) {
   num <- sub("^PUMP-", "", machine_name)
@@ -146,6 +148,12 @@ server <- function(input, output, session) {
   observeEvent(input$qa_view,     current_tab("predict"))
 
   # ---- sidebar: WRAPPED in .sidebar (the missing-navy fix) ----
+  mon_server_init(input, output, session,
+                  list(fleet = fleet, scored = scored,
+                       latest_sensor = latest_sensor,
+                       alerts_df = alerts_df,
+                       current_tab = current_tab))
+
   output$sidebar <- renderUI({
     div(class = "sidebar",
       div(class = "brand",
@@ -251,11 +259,7 @@ server <- function(input, output, session) {
   output$page <- renderUI({
     switch(current_tab(),
       dashboard = tab_dashboard(),
-      monitor   = div(class = "card span12",
-                      div(class = "card-head", h3("Live Sensor Monitoring"),
-                          span(class = "live-tag", span(class = "dot"), " Live")),
-                      uiOutput("sensor_tabs2"),
-                      plotlyOutput("sensor_chart2", height = "320px")),
+      monitor   = mon_tab_ui(),
       predict   = div(class = "card span12",
                       div(class = "card-head", h3("All Predictions")),
                       DTOutput("pred_dt")),
