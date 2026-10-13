@@ -244,3 +244,6 @@ table.status td{padding:5px 6px}
 .badge-run .dot,.badge-warn .dot,.badge-critical .dot{margin-right:4px}
 
 #mon_minis{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;align-items:start}
+
+.mini-card .val{white-space:nowrap}
+.mini-card .js-plotly-plot,.mini-card .svg-container{width:100%!important;min-height:38px}
