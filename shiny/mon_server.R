@@ -150,34 +150,45 @@ mon_server_init <- function(input, output, session, ctx) {
     })
   })
 
-  output$mon_badge <- renderUI({
-    m <- mon_sel(); req(m)
-    if (m$status == "critical") span(class = "badge-critical", "CRITICAL")
-    else if (m$status == "atrisk") span(class = "badge-warn", "WARNING")
-    else span(class = "badge-run", "RUNNING")
-  })
 
   output$mon_details <- renderUI({
     m <- mon_sel(); req(m)
     src <- machine_img(m$machine_name)
     img <- if (file.exists(file.path(project_root(), "shiny", "www", src)))
-      tags$img(src = src, alt = m$machine_name, style = "width:120px;height:92px;object-fit:cover;border-radius:10px;flex-shrink:0")
-    else div(class = "photo-tile", icon("industry"))
+      tags$img(src = src, alt = m$machine_name,
+style = paste0("width:132px;height:150px;object-fit:cover;",
+                              "border-radius:10px;flex-shrink:0"))
+    else div(class = "md-tile", icon("industry"))
+    badge <- if (m$status == "critical")
+      span(class = "badge-critical", "CRITICAL")
+    else if (m$status == "atrisk")
+      span(class = "badge-warn", "WARNING")
+    else
+      span(class = "badge-run",
+           span(class = "dot", style = "width:6px;height:6px"), " RUNNING")
     rul_h <- if (is.na(m$rul_days) || m$rul_days > 999) "720+ h"
              else paste0(round(m$rul_days * 24), " h")
     tagList(
-      div(class = "detail-top", img,
-          div(h3(m$disp_name), div(class = "mini", m$machine_name))),
-      div(class = "detail-metrics",
-          div(style = "width:92px;flex-shrink:0",
-              plotlyOutput("mon_donut", height = "92px", width = "92px")),
-          div(class = "dm",
-              div(class = "lab", "Failure Risk"),
-              div(class = "val red",
-                  paste0(round(100 * m$failure_prob), "%"))),
-          div(class = "dm",
-              div(class = "lab", icon("clock"), "Est. RUL"),
-              div(class = "val", rul_h))),
+      div(class = "md-body",
+          img,
+          div(class = "md-right",
+              div(class = "md-name", m$disp_name),
+              div(class = "md-sub", m$type_lab),
+              div(style = "margin:2px 0 4px", badge),
+              div(class = "md-metrics",
+                  div(style = "width:74px;flex-shrink:0",
+                      plotlyOutput("mon_donut", height = "74px",
+                                   width = "74px")),
+                  div(class = "md-metric",
+                      div(class = "lab",
+                          icon("triangle-exclamation",
+                               style = "color:#d43a3a"), "Failure Risk"),
+                      div(class = "val red",
+                          paste0(round(100 * m$failure_prob), "%"))),
+                  div(class = "md-metric",
+                      div(class = "lab",
+                          icon("clock", style = "color:#44536f"), "Est. RUL"),
+                      div(class = "val", rul_h))))),
       div(class = "chips",
           div(class = "chip", "Type", tags$b(m$type_lab)),
           div(class = "chip", "Location",
@@ -190,8 +201,8 @@ mon_server_init <- function(input, output, session, ctx) {
     m <- mon_sel(); req(m)
     donut(c(m$health, max(100 - m$health, 0)),
           c(health_col(m$health), "#e8edf5"),
-          paste0("<b>", round(m$health), "</b><br>Health"),
-          w = 92, h = 92)
+          paste0("<b>", round(m$health), "/100</b><br>Health Score"),
+          w = 74, h = 74, fs = 9)
   })
 
   output$mon_minis <- renderUI({
