@@ -63,7 +63,7 @@ clean_feat_label <- function(x) {
   tools::toTitleCase(gsub("_", " ", x))
 }
 
-donut <- function(values, colors, center, w = 110, h = 110) {
+donut <- function(values, colors, center, w = 120, h = 120) {
   plot_ly(values = values, type = "pie", hole = 0.75, sort = FALSE,
           marker = list(colors = colors),
           textinfo = "none", hoverinfo = "none", showlegend = FALSE) |>
@@ -199,8 +199,8 @@ server <- function(input, output, session) {
                 selectInput("sel_machine", NULL, choices = NULL, width = "100%")),
             div(class = "sel-flex",
                 uiOutput("sel_photo"),
-                div(style = "width:110px;flex-shrink:0",
-                    plotlyOutput("health_donut", height = "110px", width = "110px")),
+                div(style = "width:120px;flex-shrink:0",
+                    plotlyOutput("health_donut", height = "120px", width = "120px")),
                 div(class = "stats-col", uiOutput("sel_stats"))),
             uiOutput("sel_chips")),
         div(class = "card span3",
@@ -381,7 +381,7 @@ output$sel_photo <- renderUI({
   s <- sel(); req(s)
   src <- machine_img(s$machine_name)
   if (file.exists(file.path(project_root(), "shiny", "www", src))) {
-    tags$img(src = src, class = "photo-img", alt = s$type_lab, style = "width:150px;height:140px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0")
+    tags$img(src = src, class = "photo-img", alt = s$type_lab, style = "width:170px;height:160px;object-fit:cover;border-radius:12px;display:block;flex-shrink:0")
   } else {
     div(class = "photo-tile", icon("industry"))
   }
