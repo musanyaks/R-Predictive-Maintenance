@@ -8,7 +8,7 @@ mon_tab_ui <- function() {
         div(class = "top", span(class = "pulse"), "LIVE - Streaming"),
         div(class = "sub", uiOutput("mon_updated", inline = TRUE))))
 
-  tel_card <- div(class = "card span8",
+  tel_card <- div(class = "card", style = "grid-column:span 8",
     div(class = "card-head",
         div(style = "display:flex;align-items:center;gap:9px",
             icon("wave-square", style = "color:#2563eb"),
@@ -21,21 +21,22 @@ mon_tab_ui <- function() {
       column(9, plotlyOutput("mon_chart", height = "260px")),
       column(3, div(class = "legend-side", uiOutput("mon_side")))))
 
-  det_card <- div(class = "card span4",
+  det_card <- div(class = "card", style = "grid-column:span 4",
     div(class = "card-head", h3("Machine Details"), uiOutput("mon_badge")),
     uiOutput("mon_details"))
 
   grid1 <- div(class = "grid12", tel_card, det_card)
 
   grid2 <- div(class = "grid12",
-    uiOutput("mon_minis"),
-    div(class = "card span4",
+    div(style = "grid-column:span 8;display:grid;grid-template-columns:repeat(12,1fr);gap:14px;align-items:start",
+        uiOutput("mon_minis")),
+    div(class = "card", style = "grid-column:span 4",
         div(class = "card-head", h3("Machine Status"),
             actionLink("mon_view_all", "View All", class = "link-sm")),
         uiOutput("mon_status_table")))
 
   grid3 <- div(class = "grid12",
-    div(class = "card span8",
+    div(class = "card", style = "grid-column:span 8",
         div(class = "card-head",
             div(style = "display:flex;align-items:center;gap:9px",
                 icon("bell", style = "color:#e0a800"),
@@ -43,7 +44,7 @@ mon_tab_ui <- function() {
                 uiOutput("mon_alert_count", inline = TRUE)),
             actionLink("mon_view_alerts", "View All Alerts", class = "link-sm")),
         uiOutput("mon_alerts_table")),
-    div(class = "card span4", uiOutput("mon_banner")))
+    div(class = "card", style = "grid-column:span 4", uiOutput("mon_banner")))
 
   tagList(head, uiOutput("mon_kpis"), tags$br(), grid1,
           tags$br(), grid2, tags$br(), grid3)

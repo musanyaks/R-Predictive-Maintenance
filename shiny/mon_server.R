@@ -6,6 +6,13 @@ mon_server_init <- function(input, output, session, ctx) {
   alerts_df     <- ctx$alerts_df
   go_tab        <- ctx$current_tab
 
+  # Recency is anchored to the newest reading in the DB, not wall clock,
+  # so replayed/historical telemetry windows stay meaningful.
+  data_now <- reactive({
+    r <- fleet()$readings
+    if (is.null(r) || nrow(r) == 0) now_utc() else max(r$reading_time)
+  })
+
   sensor_meta <- list(
     temperature = list(lab = "Temperature", ic = "temperature-half",
                        unit = " C",    col = "#f59e0b"),
@@ -65,7 +72,7 @@ mon_server_init <- function(input, output, session, ctx) {
     online <- nrow(x)
     if (!is.null(r) && nrow(r) > 0) {
       active <- unique(r$machine_id[r$reading_time >=
-                                      now_utc() - lubridate::hours(3)])
+                                      data_now() - lubridate::hours(3)])
       online <- sum(x$machine_id %in% active)
     }
     n_off <- nrow(x) - online
@@ -100,7 +107,7 @@ mon_server_init <- function(input, output, session, ctx) {
     m <- mon_sel(); req(m)
     r <- fleet()$readings; req(r, nrow(r) > 0)
     d <- r[r$machine_id == m$machine_id &
-           r$reading_time >= now_utc() - lubridate::hours(12), ]
+           r$reading_time >= data_now() - lubridate::hours(12), ]
     req(nrow(d) > 5)
     w <- d |>
       dplyr::group_by(reading_time, sensor_type) |>
@@ -154,7 +161,7 @@ mon_server_init <- function(input, output, session, ctx) {
     m <- mon_sel(); req(m)
     src <- machine_img(m$machine_name)
     img <- if (file.exists(file.path(project_root(), "shiny", "www", src)))
-      tags$img(src = src, alt = m$machine_name)
+      tags$img(src = src, alt = m$machine_name, style = "width:120px;height:92px;object-fit:cover;border-radius:10px;flex-shrink:0")
     else div(class = "photo-tile", icon("industry"))
     rul_h <- if (is.na(m$rul_days) || m$rul_days > 999) "720+ h"
              else paste0(round(m$rul_days * 24), " h")
@@ -205,7 +212,7 @@ mon_server_init <- function(input, output, session, ctx) {
       arrow <- if (dcls == "up") "&uarr;"
                else if (dcls == "down") "&darr;" else "&harr;"
       sm    <- sensor_meta[[nm]]
-      div(class = "span2 mini-card",
+      div(class = "mini-card", style = "grid-column:span 2",
           div(class = "lab",
               icon(sm$ic, style = paste0("color:", sm$col)), sm$lab),
           div(class = "val", paste0(round(now_v, 1), sm$unit)),
