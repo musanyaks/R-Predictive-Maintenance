@@ -1,39 +1,46 @@
-# File: shiny/app.R — ProMaint dashboard (restructured, data-driven)
+# File: shiny/app.R — ProMaint dashboard
 if (requireNamespace("pkgload", quietly = TRUE) && file.exists("DESCRIPTION"))
   pkgload::load_all(quiet = TRUE) else library(rpredictmaint)
 
 library(shiny)
 library(plotly)
 library(DT)
-small <- function(...) tags$small(...)  # htmltools alias
 
-## ---------------- constants & helpers ----------------
+small <- function(...) tags$small(...)
+
+machine_img <- function(machine_name) {
+  num <- sub("^PUMP-", "", machine_name)
+  sprintf("machine_images/M-%s.jpg", num)
+}
+
 sensor_list   <- c(Temperature = "temperature", Vibration = "vibration",
                    Pressure = "pressure", RPM = "rpm")
 sensor_colors <- c(temperature = "#ef4444", vibration = "#f59e0b",
                    pressure = "#2563eb", rpm = "#10b981")
 
 NAV_ITEMS <- data.frame(
-  id    = c("dashboard","monitor","predict","model","anomaly",
-            "schedule","explorer","reports","settings"),
+  id    = c("dashboard","monitor","predict","model","anomaly","schedule",
+            "explorer","reports","settings"),
   icon  = c("gauge-high","wave-square","chart-line","chart-simple",
             "triangle-exclamation","calendar-days","database","file-lines","gear"),
   label = c("Dashboard","Live Monitoring","Predictions","Model Performance",
-            "Anomaly Detection","Maintenance Schedule","Data Explorer","Reports","Settings")
-)
+            "Anomaly Detection","Maintenance Schedule","Data Explorer",
+            "Reports","Settings"))
 
 time_ago <- function(t) {
-  if (length(t) == 0 || is.na(t)) return("—")
+  if (length(t) == 0 || is.na(t)) return("---")
   s <- as.numeric(difftime(Sys.time(), t, units = "secs"))
-  if (s < 60) return("just now")
-  if (s < 3600) return(paste0(round(s / 60), " min ago"))
-  if (s < 86400) return(paste0(round(s / 3600), " hours ago"))
-  paste0(round(s / 86400), " days ago")
+  if (s < 60) "just now"
+  else if (s < 3600) paste0(round(s / 60), " min ago")
+  else if (s < 86400) paste0(round(s / 3600), " hours ago")
+  else paste0(round(s / 86400), " days ago")
 }
 pretty_name <- function(x) tools::toTitleCase(tolower(x))
 pretty_type <- function(x) tools::toTitleCase(gsub("_", " ", x))
 hpct_class  <- function(h) if (h >= 85) "g" else if (h >= 70) "y" else
   if (h >= 45) "o" else "r"
+health_col  <- function(h) if (h >= 70) "#1a9e55" else
+  if (h >= 45) "#f0b429" else "#d43a3a"
 status_of <- function(rl) dplyr::case_when(
   rl == "low" ~ "online", rl %in% c("medium", "high") ~ "atrisk", TRUE ~ "critical")
 status_lab <- function(s) unname(c(online = "Online", atrisk = "At Risk",
@@ -48,10 +55,12 @@ alert_meta <- list(
 
 empty_card <- function(msg) div(class = "empty", icon("inbox"), " ", msg)
 
-card <- function(title, ..., extra = NULL) {
-  div(class = "card",
-      div(class = "card-head", h3(title), extra),
-      ...)
+clean_feat_label <- function(x) {
+  x <- gsub("^(roll_mean_|roll_sd_|lag[0-9]+_|delta[0-9]+_|dev_from_mean_|range_ratio_)",
+            "", x)
+  x <- gsub("^value_", "", x)
+  x <- gsub("_[0-9]+$", "", x)
+  tools::toTitleCase(gsub("_", " ", x))
 }
 
 donut <- function(value, color) {
@@ -71,7 +80,6 @@ kpi_card <- function(span_cls, ic, col, bg, title, big, sub, trend) {
           span(class = "trend", icon(trend))))
 }
 
-## ---------------- UI shell ----------------
 ui <- fluidPage(
   tags$head(
     tags$link(rel = "stylesheet",
@@ -85,17 +93,15 @@ ui <- fluidPage(
           uiOutput("header"),
           div(class = "content", uiOutput("page")),
           div(class = "footer",
-              span(HTML("<b style='color:#1c2b46'>R</b> Predictive Maintenance System &nbsp;|&nbsp; Powered by R, Shiny, PostgreSQL, and Machine Learning")),
-              span(class = "sys-online", span(class = "dot"), " All systems operational")))))
+              span(HTML("<b style='color:#1c2b46'>R</b>&nbsp; Predictive Maintenance System &nbsp;|&nbsp; Powered by R, Shiny, PostgreSQL, and Machine Learning")),
+              span(class = "sys-online", span(class = "dot"),
+                   " All systems operational")))))
 
-## ---------------- server ----------------
 server <- function(input, output, session) {
-
   cfg <- get_model_config()
   current_tab <- reactiveVal("dashboard")
   sensor_sel  <- reactiveVal("temperature")
 
-  ## ----- data (60s refresh) -----
   fleet <- reactivePoll(60000, session,
     checkFunc = function() as.integer(Sys.time()) %/% 60,
     valueFunc = function() tryCatch(list(
@@ -127,7 +133,6 @@ server <- function(input, output, session) {
       dplyr::slice_max(reading_time, n = 1) |> dplyr::ungroup()
   })
 
-  ## ----- sidebar / header / page switch -----
   observe({
     lapply(NAV_ITEMS$id, function(n) {
       observeEvent(input[[paste0("nav_", n)]], current_tab(n), ignoreInit = TRUE)
@@ -136,8 +141,9 @@ server <- function(input, output, session) {
   observeEvent(input$view_alerts, current_tab("predict"))
   observeEvent(input$qa_view,     current_tab("predict"))
 
+  # ---- sidebar: WRAPPED in .sidebar (the missing-navy fix) ----
   output$sidebar <- renderUI({
-    tagList(
+    div(class = "sidebar",
       div(class = "brand",
           div(class = "logo", icon("gears")),
           div(tags$b("ProMaint"), small("Predictive Maintenance"))),
@@ -173,10 +179,11 @@ server <- function(input, output, session) {
             span(style = "font-weight:700", "Admin"), icon("chevron-down")))
   })
 
-  ## ----- tab builders (plain functions returning tagLists) -----
-  tab_dashboard <- function() tagList(
-    uiOutput("kpi_row"), tags$br(),
-    div(class = "grid12",
+  tab_dashboard <- function() {
+    na <- nrow(alerts_df())
+    tagList(
+      uiOutput("kpi_row"), tags$br(),
+      div(class = "grid12",
         div(class = "card span5",
             div(class = "card-head", h3("Machine Status"),
                 span(class = "live-tag", span(class = "dot"), " Live")),
@@ -184,60 +191,59 @@ server <- function(input, output, session) {
         div(class = "card span4",
             div(class = "card-head", h3("Selected Machine"), uiOutput("sel_badge")),
             selectInput("sel_machine", NULL, choices = NULL, width = "100%"),
-            div(class = "photo", icon("industry")),
             div(class = "sel-flex",
-                div(style = "width:150px;position:relative",
+                uiOutput("sel_photo"),
+                div(class = "donut-col",
                     div(class = "donut-wrap",
-                        plotlyOutput("health_donut", height = "150px"),
+                        plotlyOutput("health_donut", height = "120px"),
                         div(class = "center-label", uiOutput("donut_center")))),
-                div(style = "flex:1", uiOutput("sel_stats"))),
+                div(class = "stats-col", uiOutput("sel_stats"))),
             uiOutput("sel_action"),
             uiOutput("sel_chips")),
         div(class = "card span3",
             div(class = "card-head", h3("Recent Alerts"),
-                actionLink("view_alerts", "View All →", class = "link-sm")),
+                div(style = "display:flex;gap:10px;align-items:center",
+                    if (na > 0) span(class = "alert-count", na) else NULL,
+                    actionLink("view_alerts", "View All", class = "link-sm"))),
             uiOutput("alert_list"))),
-    tags$br(),
-    div(class = "grid12",
-        div(class = "card span6",
+      tags$br(),
+      div(class = "grid12",
+        div(class = "card span5",
             div(class = "card-head", uiOutput("sensor_title"),
                 span(class = "live-tag", span(class = "dot"), " Live")),
             uiOutput("sensor_tabs"),
             fluidRow(column(8, plotlyOutput("sensor_chart", height = "215px")),
                      column(4, div(class = "legend-side", uiOutput("sensor_legend"))))),
-        div(class = "card span3",
+        div(class = "card span4",
             div(class = "card-head", h3("Model Performance"),
                 actionLink("compare_models", "⇄ Compare", class = "link-sm")),
             uiOutput("perf_table")),
         div(class = "card span3",
-            card("Feature Importance", uiOutput("imp_bars")))),
-    tags$br(),
-    div(class = "grid12",
-        div(class = "card span5",
+            div(class = "card-head", h3("Feature Importance")),
+            uiOutput("imp_bars"))),
+      tags$br(),
+      div(class = "grid12",
+        div(class = "card span4",
             div(class = "card-head", uiOutput("rul_title")),
             plotlyOutput("rul_chart", height = "230px")),
-        div(class = "card span3", card("Quick Insights", uiOutput("insights"))),
+        div(class = "card span3", div(class = "card-head", h3("Quick Insights")),
+            uiOutput("insights")),
+        div(class = "card span2",
+            div(class = "card-head", h3("Distribution")),
+            div(class = "donut-wrap",
+                plotlyOutput("dist_donut", height = "125px"),
+                div(class = "center-label", uiOutput("dist_center"))),
+            div(class = "dist-legend", uiOutput("dist_legend"))),
         div(class = "card span3",
-            card("Machine Health Distribution",
-                 div(class = "donut-wrap",
-                     plotlyOutput("dist_donut", height = "170px"),
-                     div(class = "center-label", uiOutput("dist_center"))))),
-        div(class = "card span4",
-            card("Quick Actions",
-                 actionButton("qa_view", "View All Predictions",
-                              icon = icon("chart-line"), class = "qa-btn blue"),
-                 actionButton("qa_report", "Download Report",
-                              icon = icon("download"), class = "qa-btn green"),
-                 downloadButton("qa_csv", "Export to CSV",
-                                class = "qa-btn purple",
-                                style = "color:#fff;border:0;display:flex"),
-                 actionButton("qa_alerts", "Configure Alerts",
-                              icon = icon("bell"), class = "qa-btn teal")))))
-
-  tab_simple_dt <- function(title, out_id) {
-    div(class = "card span12",
-        div(class = "card-head", h3(title)),
-        DTOutput(out_id))
+            div(class = "card-head", h3("Quick Actions")),
+            actionButton("qa_view", "View All Predictions",
+                         icon = icon("chart-line"), class = "qa-btn blue"),
+            actionButton("qa_report", "Download Report",
+                         icon = icon("download"), class = "qa-btn green"),
+            downloadButton("qa_csv", "Export to CSV", class = "qa-btn purple",
+                           style = "color:#fff;border:0;display:flex"),
+            actionButton("qa_alerts", "Configure Alerts",
+                         icon = icon("bell"), class = "qa-btn teal"))))
   }
 
   output$page <- renderUI({
@@ -248,16 +254,25 @@ server <- function(input, output, session) {
                           span(class = "live-tag", span(class = "dot"), " Live")),
                       uiOutput("sensor_tabs2"),
                       plotlyOutput("sensor_chart2", height = "320px")),
-      predict   = tab_simple_dt("All Predictions", "pred_dt"),
+      predict   = div(class = "card span12",
+                      div(class = "card-head", h3("All Predictions")),
+                      DTOutput("pred_dt")),
       model     = div(class = "grid12",
                       div(class = "card span7",
                           div(class = "card-head", h3("Model Registry")),
                           DTOutput("registry_dt")),
                       div(class = "card span5",
-                          card("Feature Importance", uiOutput("imp_bars2")))),
-      anomaly   = tab_simple_dt("Anomaly Leaderboard", "anom_dt"),
-      schedule  = tab_simple_dt("Maintenance Schedule", "sched_dt"),
-      explorer  = tab_simple_dt("Sensor Readings (last 48h)", "read_dt"),
+                          div(class = "card-head", h3("Feature Importance")),
+                          uiOutput("imp_bars2"))),
+      anomaly   = div(class = "card span12",
+                      div(class = "card-head", h3("Anomaly Leaderboard")),
+                      DTOutput("anom_dt")),
+      schedule  = div(class = "card span12",
+                      div(class = "card-head", h3("Maintenance Schedule")),
+                      DTOutput("sched_dt")),
+      explorer  = div(class = "card span12",
+                      div(class = "card-head", h3("Sensor Readings (last 48h)")),
+                      DTOutput("read_dt")),
       reports   = div(class = "card span12",
                       div(class = "card-head", h3("Reports & Exports")),
                       downloadButton("qa_csv2", "Export predictions CSV",
@@ -272,7 +287,6 @@ server <- function(input, output, session) {
                       verbatimTextOutput("cfg_out")))
   })
 
-  ## ----- KPIs -----
   output$kpi_row <- renderUI({
     x <- scored(); req(nrow(x) > 0)
     m <- fleet()$maint
@@ -289,56 +303,64 @@ server <- function(input, output, session) {
     div(class = "grid12",
       kpi_card("span3", "robot", "var(--blue)", "#f2f6ff", "Total Machines", n,
         HTML(paste0("<span class='on'>● ", n_online, " Online</span> &nbsp; ",
-                    "<span class='off'>● ", n_risk + n_crit, " Needing attention</span>")),
-        "chart-line"),
-      kpi_card("span3", "heart-pulse", "var(--green)", "#f0fbf4", "Healthy Machines",
-        n_online, pct(n_online), "arrow-trend-up"),
-      kpi_card("span2", "triangle-exclamation", "var(--amber)", "#fffaef", "At Risk",
-        n_risk, pct(n_risk), "arrow-trend-up"),
-      kpi_card("span2", "triangle-exclamation", "var(--red)", "#fef1f1", "Critical",
-        n_crit, pct(n_crit), "chart-line"),
+                    "<span class='off'>● ", n_risk + n_crit,
+                    " Needing attention</span>")), "chart-line"),
+      kpi_card("span3", "heart-pulse", "var(--green)", "#f0fbf4",
+               "Healthy Machines", n_online, pct(n_online), "arrow-trend-up"),
+      kpi_card("span2", "triangle-exclamation", "var(--amber)", "#fffaef",
+               "At Risk", n_risk, pct(n_risk), "arrow-trend-up"),
+      kpi_card("span2", "triangle-exclamation", "var(--red)", "#fef1f1",
+               "Critical", n_crit, pct(n_crit), "chart-line"),
       kpi_card("span2", "screwdriver-wrench", "var(--purple)", "#f6f2ff",
-        "Maintenance Cost", paste0("KSh ", format(cost, big.mark = ",")),
-        "last 30 days (downtime-based)", "arrow-trend-down"))
+               "Maintenance Cost", paste0("KSh ", format(cost, big.mark = ",")),
+               "last 30 days", "arrow-trend-down"))
   })
 
-  ## ----- machine table -----
   output$machine_table <- renderUI({
     x <- scored(); req(nrow(x) > 0)
     ls <- latest_sensor()
     val <- function(mid, st) {
-      if (is.null(ls)) return("—")
+      if (is.null(ls)) return("---")
       v <- ls$value[ls$machine_id == mid & ls$sensor_type == st]
-      if (length(v)) round(v, 1) else "—"
+      if (length(v)) round(v, 1) else "---"
     }
     rows <- lapply(seq_len(nrow(x)), function(i) {
       r <- x[i, ]
       tags$tr(class = if (r$status == "critical") "critical-row",
-        tags$td(icon("industry", style = "color:#2563eb")),
-        tags$td(class = "mini", r$machine_name),
+        tags$td(
+          tags$div(style = "display:flex;align-items:center;gap:8px",
+            local({
+              src <- machine_img(r$machine_name)
+              if (file.exists(file.path("shiny", "www", src)))
+                tags$img(src = src, class = "thumb", alt = r$machine_name)
+              else
+                tags$span(class = "thumb thumb-fallback", icon("industry"))
+            }),
+            tags$span(class = "mini", r$machine_name))),
         tags$td(class = "mname", r$disp_name),
         tags$td(pretty_type(r$machine_type)),
-        tags$td(class = paste0("hpct ", hpct_class(r$health)), paste0(round(r$health), "%")),
+        tags$td(class = paste0("hpct ", hpct_class(r$health)),
+                paste0(round(r$health), "%")),
         tags$td(val(r$machine_id, "temperature")),
         tags$td(val(r$machine_id, "vibration")),
         tags$td(span(class = paste0("pill ", r$status), status_lab(r$status))),
         tags$td(class = "mini", time_ago(r$predicted_at)))
     })
     tags$table(class = "status",
-      tags$thead(tags$tr(lapply(c("", "Machine ID", "Machine Name", "Type", "Health",
-                                 "Temp (°C)", "Vibration (mm/s)", "Status",
+      tags$thead(tags$tr(lapply(c("Machine ID", "Machine Name", "Type", "Health",
+                                 "Temp (°C)", "Vibration", "Status",
                                  "Last Update"), tags$th))),
       tags$tbody(rows))
   })
 
-  ## ----- selected machine -----
   observe({
     x <- scored()
     if (is.null(x) || nrow(x) == 0) return()
     ch <- setNames(x$machine_id, paste0(x$disp_name, "  (", x$type_lab, ")"))
     sel0 <- isolate(input$sel_machine)
     updateSelectInput(session, "sel_machine", choices = ch,
-                      selected = if (!is.null(sel0) && sel0 %in% unname(ch)) sel0 else ch[[1]])
+                      selected = if (!is.null(sel0) && sel0 %in% unname(ch)) sel0
+                                 else ch[[1]])
   })
 
   sel <- reactive({
@@ -349,10 +371,23 @@ server <- function(input, output, session) {
   output$sel_badge <- renderUI({
     s <- sel(); req(s)
     if (s$status == "critical")
-      span(class = "badge-critical", span(class = "dot", style = "background:#fff"), " Critical")
+      span(class = "badge-critical",
+           span(class = "dot", style = "background:#fff"), " Critical")
     else span(class = paste0("pill ", s$status), status_lab(s$status))
   })
-  output$health_donut <- renderPlotly({ s <- sel(); req(s); donut(s$health, "#d43a3a") })
+output$sel_photo <- renderUI({
+  s <- sel(); req(s)
+  src <- machine_img(s$machine_name)
+  if (file.exists(file.path("shiny", "www", src))) {
+    tags$img(src = src, class = "photo-img", alt = s$type_lab)
+  } else {
+    div(class = "photo-tile", icon("industry"))
+  }
+})
+
+  output$health_donut <- renderPlotly({
+    s <- sel(); req(s); donut(s$health, health_col(s$health))
+  })
   output$donut_center <- renderUI({
     s <- sel(); req(s)
     HTML(paste0("<b>", round(s$health), "%</b><span>Health Score</span>"))
@@ -364,7 +399,8 @@ server <- function(input, output, session) {
     tagList(
       div(class = "stat-row", span(class = "lab", "Failure Probability"),
           span(class = "val red", paste0(round(100 * s$failure_prob, 1), "%"))),
-      div(class = "stat-row", span(class = "lab", icon("calendar-days"), " Estimated RUL"),
+      div(class = "stat-row", span(class = "lab", icon("calendar-days"),
+                                   " Estimated RUL"),
           span(class = "val", rul_txt)))
   })
   output$sel_action <- renderUI({
@@ -375,36 +411,34 @@ server <- function(input, output, session) {
       error = function(e) "Routine monitoring")
     div(class = "stat-row",
         span(class = "lab", icon("screwdriver-wrench"), " Recommended Action"),
-        span(style = "font-weight:700;font-size:12px", rec))
+        span(style = "font-weight:700;font-size:11.5px", rec))
   })
   output$sel_chips <- renderUI({
     s <- sel(); req(s)
     tags$div(class = "chips",
       div(class = "chip", "Type", tags$b(s$type_lab)),
-      div(class = "chip", "Location", tags$b(s$location %||% "—")),
-      div(class = "chip", "Model", tags$b(paste0("PM-", sprintf("%03d", s$machine_id)))))
+      div(class = "chip", "Location", tags$b(s$location %||% "---")),
+      div(class = "chip", "Model",
+          tags$b(paste0("PM-", sprintf("%03d", s$machine_id)))))
   })
 
-  ## ----- alerts -----
   output$alert_list <- renderUI({
     a <- alerts_df()
     if (nrow(a) == 0) return(empty_card("No open alerts — all clear."))
-    x <- scored()
-    nm <- if (!is.null(x) && nrow(x) > 0) setNames(x$disp_name, x$machine_id) else NULL
     lapply(seq_len(min(5, nrow(a))), function(i) {
       r <- a[i, ]
       am <- alert_meta[[r$alert_level]] %||% alert_meta$info
       div(class = "alert-row",
         div(class = "alert-ic", style = paste0("background:", am$col), icon(am$ic)),
         div(style = "flex:1",
-            div(class = "t", paste0(r$machine_name)),
+            div(class = "t", r$machine_name),
             div(class = "m", r$message)),
         div(class = "when", time_ago(r$created_at),
-            tags$br(), span(class = paste0("pill ", am$pill), toupper(r$alert_level))))
+            tags$br(), span(class = paste0("pill ", am$pill),
+                            toupper(r$alert_level))))
     })
   })
 
-  ## ----- sensor tabs + charts -----
   output$sensor_tabs <- renderUI({
     tags$div(class = "nav-pills-inline",
       lapply(names(sensor_list), function(nm) {
@@ -455,19 +489,21 @@ server <- function(input, output, session) {
     ls <- latest_sensor(); s <- sel(); req(s)
     lapply(names(sensor_list), function(nm) {
       st <- sensor_list[[nm]]
-      v <- if (is.null(ls)) NA else ls$value[ls$machine_id == s$machine_id &
-                                             ls$sensor_type == st]
+      v <- if (is.null(ls)) NA
+           else ls$value[ls$machine_id == s$machine_id & ls$sensor_type == st]
       div(class = "leg",
           span(class = "sw", style = paste0("background:", sensor_colors[[st]])),
-          nm, tags$b(if (length(v) && !is.na(v)) round(v, 1) else "—"))
+          nm, tags$b(if (length(v) && !is.na(v)) round(v, 1) else "---"))
     })
   })
 
-  ## ----- model performance + importance -----
   output$perf_table <- renderUI({
     reg <- tryCatch(get_active_models(), error = function(e) NULL)
     if (is.null(reg) || nrow(reg) == 0)
       return(empty_card("Train models first: make train"))
+    ord <- match(c("failure_classifier","rul_model","anomaly_detector",
+                   "survival_model","ensemble"), reg$model_name)
+    reg <- reg[ord[!is.na(ord)], ]
     names_map <- c(failure_classifier = "XGBoost", rul_model = "Random Forest",
                    anomaly_detector = "Isolation Forest",
                    survival_model = "Weibull AFT", ensemble = "Ensemble")
@@ -476,7 +512,7 @@ server <- function(input, output, session) {
       mt <- tryCatch(as.data.frame(jsonlite::fromJSON(r$metrics)),
                      error = function(e) NULL)
       g <- function(k) if (!is.null(mt) && k %in% names(mt))
-        round(as.numeric(mt[[k]]), 3) else "—"
+        round(as.numeric(mt[[k]]), 3) else "---"
       tags$tr(class = if (r$model_name == "failure_classifier") "best",
         tags$td(names_map[[r$model_name]] %||% r$model_name),
         tags$td(g("accuracy")), tags$td(g("precision")), tags$td(g("recall")),
@@ -500,8 +536,7 @@ server <- function(input, output, session) {
     d <- imp_share()
     cols <- c("#d43a3a", "#f08c1a", "#e0a800", "#1a9e55", "#2563eb")
     lapply(seq_len(nrow(d)), function(i) div(class = "imp-row",
-      span(class = "lab",
-           gsub("^(value_|roll_mean_|roll_sd_|delta[0-9]+_)", "", d$feature[i])),
+      span(class = "lab", clean_feat_label(d$feature[i])),
       span(class = "pct", paste0(round(d$share[i]), "%")),
       div(class = "imp-bar",
           tags$i(style = paste0("width:", max(d$share[i] * 2.2, 8),
@@ -510,7 +545,6 @@ server <- function(input, output, session) {
   output$imp_bars  <- imp_ui()
   output$imp_bars2 <- imp_ui()
 
-  ## ----- RUL forecast -----
   output$rul_title <- renderUI({
     s <- sel(); req(s)
     h3(paste0("RUL Forecast – ", s$disp_name))
@@ -545,7 +579,6 @@ server <- function(input, output, session) {
       config(displayModeBar = FALSE)
   })
 
-  ## ----- insights + distribution -----
   output$insights <- renderUI({
     x <- scored(); req(nrow(x) > 0)
     s <- sel()
@@ -575,8 +608,20 @@ server <- function(input, output, session) {
     x <- scored(); req(nrow(x) > 0)
     HTML(paste0("<b>", nrow(x), "</b><span>Total Machines</span>"))
   })
+  output$dist_legend <- renderUI({
+    x <- scored(); req(nrow(x) > 0)
+    n <- nrow(x)
+    seg <- function(col, lab, k) {
+      div(class = "dleg",
+          span(class = "sw", style = paste0("background:", col)),
+          lab, tags$b(paste0(k, " (", round(100 * k / n), "%)")))
+    }
+    tagList(
+      seg("#1a9e55", "Healthy",  sum(x$status == "online")),
+      seg("#f0b429", "At Risk",  sum(x$status == "atrisk")),
+      seg("#d43a3a", "Critical", sum(x$status == "critical")))
+  })
 
-  ## ----- quick actions / downloads / other tabs -----
   observeEvent(input$qa_alerts, showModal(modalDialog(
     title = "Alert thresholds (from model_config.yml)",
     HTML(paste0("<b>Medium ≥ ", cfg$risk$thresholds$medium, "</b> · ",
@@ -612,9 +657,9 @@ server <- function(input, output, session) {
 
   output$pred_dt <- renderDT({
     x <- scored(); req(x)
-    datatable(x[, c("disp_name", "type_lab", "failure_prob", "rul_days",
+    datatable(x[, c("machine_name", "disp_name", "failure_prob", "rul_days",
                     "anomaly_score", "risk_score", "risk_level", "predicted_at")],
-              colnames = c("Machine", "Type", "Failure P", "RUL (d)", "Anomaly",
+              colnames = c("ID", "Machine", "Failure P", "RUL (d)", "Anomaly",
                            "Risk", "Level", "At"),
               options = list(pageLength = 10), rownames = FALSE)
   })
