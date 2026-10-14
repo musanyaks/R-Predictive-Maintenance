@@ -9,6 +9,8 @@ library(DT)
 small <- function(...) tags$small(...)
 source(file.path(project_root(), "shiny", "mon_ui.R"), local = TRUE)
 source(file.path(project_root(), "shiny", "mon_server.R"), local = TRUE)
+source(file.path(project_root(), "shiny", "pred_ui.R"), local = TRUE)
+source(file.path(project_root(), "shiny", "pred_server.R"), local = TRUE)
 
 machine_img <- function(machine_name) {
   num <- sub("^PUMP-", "", machine_name)
@@ -153,6 +155,10 @@ server <- function(input, output, session) {
                        latest_sensor = latest_sensor,
                        alerts_df = alerts_df,
                        current_tab = current_tab))
+  pred_server_init(input, output, session,
+                   list(fleet = fleet, scored = scored,
+                        alerts_df = alerts_df,
+                        current_tab = current_tab))
 
   output$sidebar <- renderUI({
     div(class = "sidebar",
@@ -260,9 +266,7 @@ server <- function(input, output, session) {
     switch(current_tab(),
       dashboard = tab_dashboard(),
       monitor   = mon_tab_ui(),
-      predict   = div(class = "card span12",
-                      div(class = "card-head", h3("All Predictions")),
-                      DTOutput("pred_dt")),
+      predict   = pred_tab_ui(),
       model     = div(class = "grid12",
                       div(class = "card span7",
                           div(class = "card-head", h3("Model Registry")),
