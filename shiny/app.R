@@ -522,10 +522,14 @@ output$sel_photo <- renderUI({
     cols_for <- list(
       classification = c("accuracy", "precision", "recall",
                          "f1", "roc_auc"),
-      rul            = c("rmse", "mae", "rsq", "roc_auc"),
-      anomaly        = c("roc_auc", "pr_auc"),
-      survival       = c("roc_auc", "pr_auc"),
-      ensemble       = c("roc_auc", "pr_auc", "rmse", "mae"))
+      rul            = c("accuracy", "precision", "recall",
+                         "f1", "roc_auc"),
+      anomaly        = c("accuracy", "precision", "recall",
+                         "f1", "roc_auc"),
+      survival       = c("accuracy", "precision", "recall",
+                         "f1", "roc_auc"),
+      ensemble       = c("accuracy", "precision", "recall",
+                         "f1", "roc_auc"))
     hdr <- unique(unlist(cols_for))
     rows <- lapply(seq_len(nrow(reg)), function(i2) {
       r <- reg[i2, ]
