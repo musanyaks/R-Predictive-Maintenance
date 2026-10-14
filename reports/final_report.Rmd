@@ -1,0 +1,44 @@
+title: "Predictive Maintenance Report"params: report_date: !r Sys.Date()output: html_document
+knitr::opts_chunk$set(echo = FALSE, warning = FALSE, message = FALSE, error = TRUE)root <- tryCatch(rprojroot::find_root(rprojroot::has_file("DESCRIPTION")),                 error = function(e) NULL)ok <- FALSEif (!is.null(root)) {  ok <- tryCatch({ pkgload::load_all(root, quiet = TRUE); TRUE },                 error = function(e) FALSE)}if (!ok) ok <- tryCatch({ library(rpredictmaint); TRUE }, error = function(e) FALSE)preds <- tryCatch(get_latest_predictions(), error = function(e) NULL)mach  <- tryCatch(get_machines(), error = function(e) NULL)maint <- tryCatch(get_maintenance_from_db(), error = function(e) NULL)has <- ok && !is.null(preds) && nrow(preds) > 0 && !is.null(mach)
+
+Executive summary — r params$report_date
+
+if (!ok) {
+  cat("Package could not load in the render environment.")
+} else if (!has) {
+  cat("No prediction data yet. Run: make train, then run_batch_predictions().")
+} else {
+  out <- preds |> dplyr::left_join(mach[c("machine_id", "machine_name")],
+                                   by = "machine_id")
+  knitr::kable(out[, c("machine_name", "failure_prob", "rul_days",
+                       "risk_score", "risk_level")], digits = 3)
+}
+
+
+Risk distribution 
+
+if (has) barplot(table(preds$risk_level),
+                 col = c("#1a9e55", "#f0b429", "#e08a00", "#d43a3a"),
+                 main = "Machines by risk level") else cat("No data.")
+
+Recent maintenance
+
+if (!is.null(maint) && nrow(maint) > 0) {
+  m2 <- maint[order(maint$performed_at, decreasing = TRUE), ]
+  knitr::kable(utils::head(m2[, c("machine_id", "maintenance_type",
+                                  "performed_at")], 10))
+} else cat("No maintenance history available.")
+
+
+
+
+## Verify in Git Bash (one-liners are safe — only multi-line heredocs were getting mangled)
+
+```bash
+cd /d/PROJECTS/R-Predictive-Maintenance
+echo "lines (want ~58):       $(wc -l < reports/final_report.Rmd)"
+echo "Recent maintenance (1): $(grep -c 'Recent maintenance' reports/final_report.Rmd)"
+echo "test script inside (0): $(grep -c '_testrender' reports/final_report.Rmd)"
+tail -2 reports/final_report.Rmd
+
+
