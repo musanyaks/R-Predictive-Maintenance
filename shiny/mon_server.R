@@ -208,34 +208,38 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
   output$mon_minis <- renderUI({
     m <- mon_sel(); req(m)
     r <- fleet()$readings; req(r, nrow(r) > 0)
-    cards <- lapply(names(sensor_meta), function(nm) {
+    mk_card <- function(nm) {
       d <- r[r$machine_id == m$machine_id & r$sensor_type == nm, ]
       d <- d[order(d$reading_time), ]
-      if (nrow(d) < 4) return(NULL)
-      now_v <- mean(tail(d$value, 3))
-      tmax  <- max(d$reading_time)
-      past  <- d$value[d$reading_time >= tmax - lubridate::hours(2) &
-                       d$reading_time <  tmax - lubridate::hours(1)]
-      delta <- if (length(past) >= 2 && mean(past) != 0)
-        100 * (now_v - mean(past)) / mean(past) else 0
-      dcls  <- if (abs(delta) < 2) "flat"
-               else if (delta > 0) "up" else "down"
-      arrow <- if (dcls == "up") "&uarr;"
-               else if (dcls == "down") "&darr;" else "&harr;"
-      sm    <- sensor_meta[[nm]]
-      div(class = "mini-card", style = "flex:1;min-width:0",
+      if (nrow(d) < 8) return(NULL)
+      now_v <- mean(tail(d$value, 6))
+      prev  <- tail(head(tail(d$value, 12), 6), 6)
+      delta <- 0
+      if (length(prev) == 6 && mean(prev) != 0)
+        delta <- 100 * (now_v - mean(prev)) / mean(prev)
+      dcls <- "flat"
+      if (abs(delta) >= 0.5) dcls <- if (delta > 0) "up" else "down"
+      arrow <- "&harr;"
+      if (dcls == "up") arrow <- "&uarr;"
+      if (dcls == "down") arrow <- "&darr;"
+      sm <- sensor_meta[[nm]]
+      div(class = "mini-card",
+          style = "flex:1 1 0;min-width:0",
           div(class = "lab",
-              icon(sm$ic, style = paste0("color:", sm$col)), sm$lab),
-          div(class = "val", paste0(round(now_v, 1), sm$unit)),
+              icon(sm$ic, style = paste0("color:", sm$col)),
+              sm$lab),
+          div(class = "val",
+              paste0(round(now_v, 1), sm$unit)),
           div(class = paste0("delta ", dcls),
               HTML(paste0(arrow, " ", round(abs(delta), 1),
-                          "% vs last hour"))),
+                          "% vs 6h ago"))),
           plotlyOutput(paste0("spark_", nm), height = "38px"))
-    })
-    cards <- Filter(Negate(is.null), cards)
+    }
+    cards <- Filter(Negate(is.null),
+                    lapply(names(sensor_meta), mk_card))
     req(length(cards) > 0)
-    div(style = "display:flex;gap:14px;align-items:stretch",
-       do.call(tagList, cards))
+    div(style = "display:flex;gap:14px;align-items:stretch;width:100%",
+        cards)
   })
 
   for (sn in names(sensor_meta)) {
