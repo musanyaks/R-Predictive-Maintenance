@@ -642,7 +642,25 @@ output$sel_photo <- renderUI({
   output$qa_csv2 <- downloadHandler(csv_name(),
     function(file) readr::write_csv(csv_data(), file))
 
+  ensure_pandoc <- function() {
+    if (nchar(Sys.which("pandoc")) > 0) return(invisible(TRUE))
+    cands <- unique(c(
+      Sys.getenv("PANDOC_HOME"),
+      file.path(Sys.getenv("LOCALAPPDATA"), "Pandoc"),
+      "C:/Program Files/Pandoc",
+      "C:/Program Files/RStudio/resources/app/bin/quarto/bin/tools",
+      "C:/Program Files/RStudio/bin/pandoc"))
+    cands <- cands[nzchar(cands)]
+    for (d in cands) {
+      if (file.exists(file.path(d, "pandoc.exe"))) {
+        Sys.setenv(RSTUDIO_PANDOC = d)
+        return(invisible(TRUE))
+      }
+    }
+    stop("Pandoc not found. Install: winget install JohnMacFarlane.Pandoc")
+  }
   do_report <- function() {
+    ensure_pandoc()
     showModal(modalDialog("Rendering HTML report… (~30s)", footer = NULL,
                           easyClose = TRUE))
     out <- tryCatch({
