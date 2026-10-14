@@ -510,26 +510,45 @@ output$sel_photo <- renderUI({
     reg <- tryCatch(get_active_models(), error = function(e) NULL)
     if (is.null(reg) || nrow(reg) == 0)
       return(empty_card("Train models first: make train"))
-    ord <- match(c("failure_classifier","rul_model","anomaly_detector",
-                   "survival_model","ensemble"), reg$model_name)
+    ord <- match(c("failure_classifier", "rul_model",
+                   "anomaly_detector", "survival_model",
+                   "ensemble"), reg$model_name)
     reg <- reg[ord[!is.na(ord)], ]
-    names_map <- c(failure_classifier = "XGBoost", rul_model = "Random Forest",
+    names_map <- c(failure_classifier = "XGBoost",
+                   rul_model = "Random Forest",
                    anomaly_detector = "Isolation Forest",
-                   survival_model = "Weibull AFT", ensemble = "Ensemble")
-    rows <- lapply(seq_len(nrow(reg)), function(i) {
-      r <- reg[i, ]
+                   survival_model = "Weibull AFT",
+                   ensemble = "Ensemble")
+    cols_for <- list(
+      classification = c("accuracy", "precision", "recall",
+                         "f1", "roc_auc"),
+      rul            = c("rmse", "mae", "rsq", "roc_auc"),
+      anomaly        = c("roc_auc", "pr_auc"),
+      survival       = c("roc_auc", "pr_auc"),
+      ensemble       = c("roc_auc", "pr_auc", "rmse", "mae"))
+    hdr <- unique(unlist(cols_for))
+    rows <- lapply(seq_len(nrow(reg)), function(i2) {
+      r <- reg[i2, ]
       mt <- tryCatch(as.data.frame(jsonlite::fromJSON(r$metrics)),
                      error = function(e) NULL)
-      g <- function(k) if (!is.null(mt) && k %in% names(mt))
-        round(as.numeric(mt[[k]]), 3) else "---"
+      have <- if (!is.null(mt)) names(mt) else character(0)
+      tds <- lapply(hdr, function(k) {
+        if (k %in% cols_for[[r$model_type]] && k %in% have) {
+          tags$td(format(round(as.numeric(mt[[k]]), 3), nsmall = 3))
+        } else tags$td(style = "color:#c9d2e0", "n/a")
+      })
       tags$tr(class = if (r$model_name == "failure_classifier") "best",
         tags$td(names_map[[r$model_name]] %||% r$model_name),
-        tags$td(g("accuracy")), tags$td(g("precision")), tags$td(g("recall")),
-        tags$td(g("f1")), tags$td(g("roc_auc")))
+        tds)
     })
     tags$table(class = "models",
-      tags$thead(tags$tr(lapply(c("Model", "Accuracy", "Precision", "Recall",
-                                 "F1", "ROC-AUC"), tags$th))),
+      tags$thead(tags$tr(
+        tags$th("Model"),
+        lapply(hdr, function(k) tags$th(
+          switch(k, accuracy = "Acc.", precision = "Prec.",
+                 recall = "Rec.", f1 = "F1", roc_auc = "ROC-AUC",
+                 pr_auc = "PR-AUC", rmse = "RMSE", mae = "MAE",
+                 rsq = "R2", k))))),
       tags$tbody(rows))
   })
 
