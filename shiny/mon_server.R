@@ -1,4 +1,4 @@
-## File: shiny/mon_server.R — Live Monitoring server logic
+## File: shiny/mon_server.R - Live Monitoring server (canonical regeneration)
 mon_server_init <- function(input, output, session, ctx) {
   fleet         <- ctx$fleet
   scored        <- ctx$scored
@@ -6,8 +6,7 @@ mon_server_init <- function(input, output, session, ctx) {
   alerts_df     <- ctx$alerts_df
   go_tab        <- ctx$current_tab
 
-  # Recency is anchored to the newest reading in the DB, not wall clock,
-  # so replayed/historical telemetry windows stay meaningful.
+  # Recency anchored to newest reading in DB (static-seed compatible)
   data_now <- reactive({
     r <- fleet()$readings
     if (is.null(r) || nrow(r) == 0) now_utc() else max(r$reading_time)
@@ -15,19 +14,26 @@ mon_server_init <- function(input, output, session, ctx) {
 
   sensor_meta <- list(
     temperature = list(lab = "Temperature", ic = "temperature-half",
-                       unit = " C",    col = "#f59e0b"),
+                       unit = " C",    col = "#f59e0b",
+                       fill = "rgba(245,158,11,0.20)"),
     vibration   = list(lab = "Vibration",   ic = "wave-square",
-                       unit = " mm/s", col = "#2563eb"),
+                       unit = " mm/s", col = "#2563eb",
+                       fill = "rgba(37,99,235,0.20)"),
     pressure    = list(lab = "Pressure",    ic = "gauge",
-                       unit = " kPa",  col = "#1a9e55"),
+                       unit = " kPa",  col = "#1a9e55",
+                       fill = "rgba(26,158,85,0.20)"),
     rpm         = list(lab = "RPM",         ic = "fan",
-                       unit = "",      col = "#7c5cff"))
+                       unit = "",      col = "#7c5cff",
+                       fill = "rgba(124,92,255,0.20)")
+  )
 
   mon_sel <- reactive({
     x <- scored()
     if (is.null(x) || nrow(x) == 0) return(NULL)
     id <- input$mon_machine
-    if (!is.null(id) && id %in% x$machine_id) return(x[x$machine_id == id, ][1, ])
+    if (!is.null(id) && id %in% x$machine_id) {
+      return(x[x$machine_id == id, ][1, ])
+    }
     crit <- x[x$status == "critical", ]
     if (nrow(crit) > 0) crit[1, ] else x[1, ]
   })
@@ -57,12 +63,15 @@ mon_server_init <- function(input, output, session, ctx) {
   output$mon_legend <- renderUI({
     tags$div(style = paste0("display:flex;gap:13px;align-items:center;",
                             "font-size:11px;color:#54627d"),
-      lapply(list(c("Temp (C)", "#ef4444"), c("Pressure (kPa)", "#1a9e55"),
-                  c("Vibration (mm/s)", "#2563eb"), c("RPM /100", "#7c5cff")),
+      lapply(list(c("Temp (C)", "#ef4444"),
+                  c("Pressure (kPa)", "#1a9e55"),
+                  c("Vibration (mm/s)", "#2563eb"),
+                  c("RPM /100", "#7c5cff")),
              function(x) span(
-               span(class = "sw", style = paste0("background:", x[2],
-                    ";display:inline-block;width:8px;height:8px;",
-                    "border-radius:50%;margin-right:5px")),
+               span(class = "sw",
+                    style = paste0("background:", x[2],
+                                   ";display:inline-block;width:8px;height:8px;",
+                                   "border-radius:50%;margin-right:5px")),
                x[1])))
   })
 
@@ -118,7 +127,7 @@ mon_server_init <- function(input, output, session, ctx) {
       list(n = "temperature", col = "#ef4444", lab = "Temp (C)",         f = 1),
       list(n = "pressure",    col = "#1a9e55", lab = "Pressure (kPa)",   f = 1),
       list(n = "vibration",   col = "#2563eb", lab = "Vibration (mm/s)", f = 1),
-      list(n = "rpm",         col = "#7c5cff", lab = "RPM /100",        f = 100))
+      list(n = "rpm",         col = "#7c5cff", lab = "RPM /100",         f = 100))
     for (s in series) {
       if (s$n %in% names(w)) {
         p <- plotly::add_lines(p, x = w$reading_time, y = w[[s$n]] / s$f,
@@ -126,12 +135,13 @@ mon_server_init <- function(input, output, session, ctx) {
                                name = s$lab)
       }
     }
-    p |> layout(margin = list(20, 10, 10, 40),
-                paper_bgcolor = "transparent", plot_bgcolor = "transparent",
-                legend = list(orientation = "h", y = -0.22,
-                              font = list(size = 10)),
-                xaxis = list(title = "", showgrid = FALSE),
-                yaxis = list(title = "", gridcolor = "#eef2f9")) |>
+    p |>
+      layout(margin = list(20, 10, 10, 40),
+             paper_bgcolor = "transparent", plot_bgcolor = "transparent",
+             legend = list(orientation = "h", y = -0.22,
+                           font = list(size = 10)),
+             xaxis = list(title = "", showgrid = FALSE),
+             yaxis = list(title = "", gridcolor = "#eef2f9")) |>
       config(displayModeBar = FALSE)
   })
 
@@ -150,22 +160,24 @@ mon_server_init <- function(input, output, session, ctx) {
     })
   })
 
-
   output$mon_details <- renderUI({
     m <- mon_sel(); req(m)
     src <- machine_img(m$machine_name)
-    img <- if (file.exists(file.path(project_root(), "shiny", "www", src)))
+    img <- if (file.exists(file.path(project_root(), "shiny", "www", src))) {
       tags$img(src = src, alt = m$machine_name,
-style = paste0("width:132px;height:150px;object-fit:cover;",
+               style = paste0("width:132px;height:150px;object-fit:cover;",
                               "border-radius:10px;flex-shrink:0"))
-    else div(class = "md-tile", icon("industry"))
-    badge <- if (m$status == "critical")
+    } else {
+      div(class = "md-tile", icon("industry"))
+    }
+    badge <- if (m$status == "critical") {
       span(class = "badge-critical", "CRITICAL")
-    else if (m$status == "atrisk")
+    } else if (m$status == "atrisk") {
       span(class = "badge-warn", "WARNING")
-    else
+    } else {
       span(class = "badge-run",
            span(class = "dot", style = "width:6px;height:6px"), " RUNNING")
+    }
     rul_h <- if (is.na(m$rul_days) || m$rul_days > 999) "720+ h"
              else paste0(round(m$rul_days * 24), " h")
     tagList(
@@ -215,8 +227,9 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
       now_v <- mean(tail(d$value, 6))
       prev  <- tail(head(tail(d$value, 12), 6), 6)
       delta <- 0
-      if (length(prev) == 6 && mean(prev) != 0)
+      if (length(prev) == 6 && mean(prev) != 0) {
         delta <- 100 * (now_v - mean(prev)) / mean(prev)
+      }
       dcls <- "flat"
       if (abs(delta) >= 0.5) dcls <- if (delta > 0) "up" else "down"
       arrow <- "&harr;"
@@ -226,17 +239,17 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
       div(class = "mini-card",
           style = "flex:1 1 0;min-width:0",
           div(class = "lab",
-              icon(sm$ic, style = paste0("color:", sm$col)),
+              span(class = "ic-chip",
+                   style = paste0("background:", sm$col),
+                   icon(sm$ic)),
               sm$lab),
-          div(class = "val",
-              paste0(round(now_v, 1), sm$unit)),
+          div(class = "val", paste0(round(now_v, 1), sm$unit)),
           div(class = paste0("delta ", dcls),
               HTML(paste0(arrow, " ", round(abs(delta), 1),
                           "% vs 6h ago"))),
-          plotlyOutput(paste0("spark_", nm), height = "38px"))
+          plotlyOutput(paste0("spark_", nm), height = "60px"))
     }
-    cards <- Filter(Negate(is.null),
-                    lapply(names(sensor_meta), mk_card))
+    cards <- Filter(Negate(is.null), lapply(names(sensor_meta), mk_card))
     req(length(cards) > 0)
     div(style = "display:flex;gap:14px;align-items:stretch;width:100%",
         cards)
@@ -252,9 +265,11 @@ style = paste0("width:132px;height:150px;object-fit:cover;",
         d <- d[order(d$reading_time), ]
         req(nrow(d) >= 3)
         d <- tail(d, 24)
+        sm <- sensor_meta[[sn_]]
         plot_ly(d, x = ~reading_time, y = ~value,
                 type = "scatter", mode = "lines",
-                line = list(color = sensor_meta[[sn_]]$col, width = 1.6),
+                fill = "tozeroy", fillcolor = sm$fill,
+                line = list(color = sm$col, width = 2),
                 hoverinfo = "none") |>
           layout(margin = list(0, 0, 0, 0),
                  paper_bgcolor = "transparent",
