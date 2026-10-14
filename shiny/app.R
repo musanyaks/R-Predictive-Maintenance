@@ -659,21 +659,46 @@ output$sel_photo <- renderUI({
     }
     stop("Pandoc not found. Install: winget install JohnMacFarlane.Pandoc")
   }
+  report_file <- reactiveVal(NULL)
+
   do_report <- function() {
-    ensure_pandoc()
-    showModal(modalDialog("Rendering HTML report… (~30s)", footer = NULL,
-                          easyClose = TRUE))
+    dir <- file.path(project_root(), "reports", "maintenance_reports")
+    dir.create(dir, showWarnings = FALSE, recursive = TRUE)
     out <- tryCatch({
-      f <- tempfile(fileext = ".html")
-      rmarkdown::render(file.path(project_root(), "reports", "final_report.Rmd"),
-                        output_file = f, quiet = TRUE)
+      f <- file.path(dir, paste0("report_",
+             format(Sys.time(), "%Y%m%d_%H%M%S"), ".html"))
+      rpredictmaint::build_report_html(f)
       f
-    }, error = function(e) e$message)
-    removeModal()
-    if (file.exists(out)) utils::browseURL(out)
-    else showNotification(out, type = "error")
+    }, error = function(e) {
+      showNotification(paste("Report failed:", conditionMessage(e)),
+                       type = "error", duration = 15)
+      NULL
+    })
+    if (is.null(out) || !file.exists(out) ||
+        file.info(out)$size < 2000) {
+      showNotification("Report rendered empty - check console",
+                       type = "error", duration = 15)
+      return(invisible(NULL))
+    }
+    report_file(out)
+    showModal(modalDialog(
+      title = "Report ready",
+      tags$p("Saved to"), tags$code(out),
+      downloadButton("report_dl", "Download Report (.html)"),
+      footer = modalButton("Close"), easyClose = TRUE))
   }
-  observeEvent(input$qa_report,  do_report())
+
+  output$report_dl <- downloadHandler(
+    filename = function() paste0("maintenance_report_",
+      format(Sys.Date(), "%Y%m%d"), ".html"),
+    content = function(file) {
+      f <- report_file()
+      req(f, file.exists(f))
+      file.copy(f, file)
+    }
+  )
+
+  observeEvent(input$qa_report, do_report())
   observeEvent(input$qa_report2, do_report())
 
   output$pred_dt <- renderDT({
