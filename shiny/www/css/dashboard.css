@@ -249,3 +249,12 @@ table.status td{padding:5px 6px}
 .mini-card .js-plotly-plot,.mini-card .svg-container{width:100%!important;min-height:38px}
 #mon_minis .mini-card{flex:1 1 0;min-width:0}
 .mini-card{min-width:0}
+/* mini cards - mock polish */
+.mini-card{text-align:center;padding:14px 12px 4px}
+.mini-card .lab{display:flex;justify-content:center;align-items:center;gap:7px;
+  font-size:11.5px;color:var(--muted);font-weight:600}
+.mini-card .ic-chip{width:26px;height:26px;border-radius:8px;display:inline-grid;
+  place-items:center;color:#fff;font-size:11px;flex-shrink:0}
+.mini-card .val{font-size:22px;font-weight:800;margin:6px 0 2px}
+.mini-card .delta{font-size:11px;margin-bottom:6px}
+.mini-card .js-plotly-plot,.mini-card .svg-container{width:100%!important}
