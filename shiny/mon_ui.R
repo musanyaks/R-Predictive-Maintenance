@@ -1,4 +1,4 @@
-## File: shiny/mon_ui.R — Live Monitoring tab (mock layout)
+## File: shiny/mon_ui.R - Live Monitoring tab (final mock layout)
 mon_tab_ui <- function() {
   head <- div(class = "mon-head",
     div(h2("Live Monitoring"),
@@ -46,7 +46,8 @@ mon_tab_ui <- function() {
                 uiOutput("mon_alert_count", inline = TRUE)),
             actionLink("mon_view_alerts", "View All Alerts", class = "link-sm")),
         uiOutput("mon_alerts_table")),
-    div(class = "card", style = "grid-column:span 4", uiOutput("mon_banner")))
+    div(class = "card", style = "grid-column:span 4",
+        uiOutput("mon_banner")))
 
   tagList(head, uiOutput("mon_kpis"), tags$br(), grid1,
           tags$br(), grid2, tags$br(), grid3)
